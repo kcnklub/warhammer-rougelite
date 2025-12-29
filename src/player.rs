@@ -1,0 +1,230 @@
+use crate::{
+    game_state::Projectile,
+    statuses::*,
+    weapons::{BolterData, Weapon},
+};
+use raylib::ffi::KeyboardKey;
+
+pub enum Direction {
+    Up,
+    Down,
+    Left,
+    Right,
+}
+
+pub struct Position {
+    pub x: f32,
+    pub y: f32,
+    pub direction: Direction,
+}
+
+pub struct Player {
+    pub position: Position,
+    move_speed: f32,
+    pub block_size: f32,
+    pub health: f32,
+    pub max_health: f32,
+
+    pub statuses: Vec<Status>,
+    pub weapons: Vec<Weapon>,
+}
+
+impl Player {
+    pub fn new() -> Self {
+        let mut player = Player {
+            position: Position {
+                x: 400.0,
+                y: 400.0,
+                direction: Direction::Right,
+            },
+            move_speed: 200.0,
+            block_size: 20.0,
+            health: 100.0,
+            max_health: 100.0,
+            statuses: vec![],
+            weapons: vec![],
+        };
+
+        // Add all status effects for testing
+        player.add_status(Status::Poison(PoisonStatus {
+            damage_per_tick: 5.0,
+            tick_interval: 1.0,
+            remaining_duration: 10.0,
+            time_since_last_tick: 0.0,
+        }));
+
+        player.add_status(Status::Burn(BurnStatus {
+            damage_per_tick: 3.0,
+            tick_interval: 0.5,
+            remaining_duration: 8.0,
+            time_since_last_tick: 0.0,
+        }));
+
+        player.add_status(Status::Slow(SlowStatus {
+            speed_multiplier: 0.5,
+            remaining_duration: 12.0,
+        }));
+
+        player.add_status(Status::Stun(StunStatus {
+            remaining_duration: 3.0,
+        }));
+
+        player.add_status(Status::Regeneration(RegenerationStatus {
+            heal_per_tick: 2.0,
+            tick_interval: 1.0,
+            remaining_duration: 15.0,
+            time_since_last_tick: 0.0,
+        }));
+
+        player.add_status(Status::SpeedBoost(SpeedBoostStatus {
+            speed_multiplier: 1.5,
+            remaining_duration: 10.0,
+        }));
+
+        player.add_weapon(Weapon::Bolter(BolterData {
+            damage: 1.0,
+            tick_interval: 1.0,
+            time_since_last_tick: 0.0,
+        }));
+
+        player
+    }
+
+    pub fn handle_movement(&mut self, rl: &raylib::RaylibHandle, delta: &f32) {
+        let speed_multiplier = self.calculate_speed_multiplier();
+        let effective_speed = self.move_speed * speed_multiplier;
+
+        // Handle WASD input
+        if rl.is_key_down(KeyboardKey::KEY_W) {
+            self.position.y -= effective_speed * delta;
+        }
+        if rl.is_key_down(KeyboardKey::KEY_S) {
+            self.position.y += effective_speed * delta;
+        }
+        if rl.is_key_down(KeyboardKey::KEY_A) {
+            self.position.x -= effective_speed * delta;
+        }
+        if rl.is_key_down(KeyboardKey::KEY_D) {
+            self.position.x += effective_speed * delta;
+        }
+
+        // Keep player within screen bounds
+        self.position.x = self.position.x.max(0.0).min(800.0 - self.block_size);
+        self.position.y = self.position.y.max(0.0).min(800.0 - self.block_size);
+    }
+
+    pub fn handle_status_effects(&mut self, delta: &f32) {
+        // Process each status effect
+        for status in self.statuses.iter_mut() {
+            match status {
+                Status::Poison(data) => {
+                    data.time_since_last_tick += delta;
+                    data.remaining_duration -= delta;
+
+                    if data.time_since_last_tick >= data.tick_interval {
+                        self.health -= data.damage_per_tick;
+                        data.time_since_last_tick = 0.0;
+                    }
+                }
+                Status::Burn(data) => {
+                    data.time_since_last_tick += delta;
+                    data.remaining_duration -= delta;
+
+                    if data.time_since_last_tick >= data.tick_interval {
+                        self.health -= data.damage_per_tick;
+                        data.time_since_last_tick = 0.0;
+                    }
+                }
+                Status::Slow(data) => {
+                    data.remaining_duration -= delta;
+                }
+                Status::Stun(data) => {
+                    data.remaining_duration -= delta;
+                }
+                Status::Regeneration(data) => {
+                    data.time_since_last_tick += delta;
+                    data.remaining_duration -= delta;
+
+                    if data.time_since_last_tick >= data.tick_interval {
+                        self.health += data.heal_per_tick;
+                        data.time_since_last_tick = 0.0;
+                    }
+                }
+                Status::SpeedBoost(data) => {
+                    data.remaining_duration -= delta;
+                }
+            }
+        }
+
+        // Clamp health between 0 and max_health
+        self.health = self.health.max(0.0).min(self.max_health);
+
+        // Remove expired statuses
+        self.statuses.retain(|status| !status.is_expired());
+    }
+
+    pub fn handle_weapons(&mut self, delta: &f32) -> Vec<Projectile> {
+        let mut res = vec![];
+        for weapon in self.weapons.iter_mut() {
+            match weapon {
+                Weapon::Bolter(data) => {
+                    data.time_since_last_tick += delta;
+
+                    if data.time_since_last_tick >= data.tick_interval {
+                        println!("Firing the bolter");
+                        res.push(Projectile);
+                        data.time_since_last_tick = 0.0;
+                    }
+                }
+            }
+        }
+        res
+    }
+
+    fn calculate_speed_multiplier(&self) -> f32 {
+        let mut multiplier = 1.0;
+
+        for status in &self.statuses {
+            match status {
+                Status::Stun(_) => return 0.0, // Stun overrides everything
+                Status::Slow(data) => multiplier *= data.speed_multiplier,
+                Status::SpeedBoost(data) => multiplier *= data.speed_multiplier,
+                _ => {}
+            }
+        }
+
+        multiplier
+    }
+
+    pub fn add_status(&mut self, status: Status) {
+        // Remove existing status of the same type (single instance rule)
+        self.statuses.retain(|s| {
+            !matches!(
+                (s, &status),
+                (Status::Poison(_), Status::Poison(_))
+                    | (Status::Burn(_), Status::Burn(_))
+                    | (Status::Slow(_), Status::Slow(_))
+                    | (Status::Stun(_), Status::Stun(_))
+                    | (Status::Regeneration(_), Status::Regeneration(_))
+                    | (Status::SpeedBoost(_), Status::SpeedBoost(_))
+            )
+        });
+
+        self.statuses.push(status);
+    }
+
+    pub fn get_active_status_names(&self) -> Vec<(String, f32)> {
+        self.statuses
+            .iter()
+            .map(|s| (s.get_display_name().to_string(), s.get_remaining_duration()))
+            .collect()
+    }
+
+    pub fn add_weapon(&mut self, weapon: Weapon) {
+        // Remove existing status of the same type (single instance rule)
+        self.weapons
+            .retain(|s| !matches!((s, &weapon), (Weapon::Bolter(_), Weapon::Bolter(_))));
+
+        self.weapons.push(weapon);
+    }
+}
