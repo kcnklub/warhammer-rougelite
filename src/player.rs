@@ -1,10 +1,11 @@
 use crate::{
-    game_state::Projectile,
+    projectile::{BolterProjectile, Projectile},
     statuses::*,
     weapons::{BolterData, Weapon},
 };
 use raylib::ffi::KeyboardKey;
 
+#[derive(Clone, Copy)]
 pub enum Direction {
     Up,
     Down,
@@ -12,6 +13,7 @@ pub enum Direction {
     Right,
 }
 
+#[derive(Clone, Copy)]
 pub struct Position {
     pub x: f32,
     pub y: f32,
@@ -20,11 +22,12 @@ pub struct Position {
 
 pub struct Player {
     pub position: Position,
-    move_speed: f32,
+    pub move_speed: f32,
     pub block_size: f32,
     pub health: f32,
     pub max_health: f32,
 
+    // game mechanic data
     pub statuses: Vec<Status>,
     pub weapons: Vec<Weapon>,
 }
@@ -172,7 +175,9 @@ impl Player {
 
                     if data.time_since_last_tick >= data.tick_interval {
                         println!("Firing the bolter");
-                        res.push(Projectile);
+                        res.push(Projectile::Bolter(BolterProjectile::new(
+                            self.position.clone(),
+                        )));
                         data.time_since_last_tick = 0.0;
                     }
                 }

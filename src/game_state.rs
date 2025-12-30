@@ -1,14 +1,18 @@
-use raylib::{color::Color, prelude::RaylibDraw};
+use raylib::{
+    color::Color,
+    ffi::{self, Vector2},
+    prelude::RaylibDraw,
+};
 
-use crate::player::Player;
-
-#[derive(Clone, Copy)]
-pub struct Projectile;
+use crate::{
+    player::Player,
+    projectile::{AllProjectiles, Projectile},
+};
 
 pub struct GameState<'a> {
     pub rl: &'a mut raylib::RaylibHandle,
     pub player: Player,
-    pub projectiles: Vec<Projectile>,
+    pub projectiles: AllProjectiles,
 }
 
 impl<'a> GameState<'a> {
@@ -16,7 +20,7 @@ impl<'a> GameState<'a> {
         GameState {
             rl,
             player,
-            projectiles: vec![],
+            projectiles: AllProjectiles::new(),
         }
     }
 
@@ -24,12 +28,13 @@ impl<'a> GameState<'a> {
         self.player.handle_movement(self.rl, &delta);
         self.player.handle_status_effects(&delta);
         let mut new_projectiles = self.player.handle_weapons(&delta);
-
         self.projectiles.append(&mut new_projectiles);
+        self.projectiles.move_projectiles(&delta);
     }
 
     pub fn render(&mut self, thread: &raylib::RaylibThread) {
         let fps = self.rl.get_fps();
+        let time = self.rl.get_time();
         let mut d = self.rl.begin_drawing(thread);
 
         d.clear_background(Color::DARKGRAY);
@@ -93,16 +98,24 @@ impl<'a> GameState<'a> {
             y_offset += 20;
         }
 
-        let active_projectiles = &self.projectiles;
-        for _p in active_projectiles {
-            d.draw_text(
-                &format!("The bolter is firing!!!"),
-                10,
-                y_offset,
-                18,
-                Color::PURPLE,
-            );
-            y_offset += 20;
+        let active_projectiles = &self.projectiles.projectiles;
+        for projetile in active_projectiles {
+            match projetile {
+                Projectile::Bolter(bolter_data) => {
+                    let rect = ffi::Rectangle {
+                        x: bolter_data.position.x,
+                        y: bolter_data.position.y,
+                        width: 5.0,
+                        height: 5.0,
+                    };
+                    let origin = ffi::Vector2 { x: 2.5, y: 2.5 };
+                    // Rotation based on distance traveled (position sum) and time
+                    let rotation = ((bolter_data.position.x + bolter_data.position.y) * 0.5
+                        + time as f32 * 360.0)
+                        % 360.0;
+                    d.draw_rectangle_pro(rect, origin, rotation, Color::BLACK);
+                }
+            }
         }
     }
 }
