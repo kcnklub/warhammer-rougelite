@@ -6,6 +6,9 @@ fn main() {
         .title("Move Block with WASD")
         .build();
 
+    // TODO split game integration loop from FPS so I don't need this.
+    rl.set_target_fps(144);
+
     let texture = rl
         .load_texture(&thread, "./assests/sprites/dark-fighter.png")
         .unwrap();
