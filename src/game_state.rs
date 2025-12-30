@@ -1,6 +1,6 @@
 use raylib::{
     color::Color,
-    ffi::{self, Vector2},
+    ffi::{self},
     prelude::RaylibDraw,
 };
 
@@ -27,6 +27,9 @@ impl<'a> GameState<'a> {
     pub fn game_tick(&mut self, delta: &f32) {
         self.player.handle_movement(self.rl, &delta);
         self.player.handle_status_effects(&delta);
+
+        // handle and update projectiles
+        // TODO I need to clean up projectiles that are passed the end of the play area!!
         let mut new_projectiles = self.player.handle_weapons(&delta);
         self.projectiles.append(&mut new_projectiles);
         self.projectiles.move_projectiles(&delta);
@@ -35,19 +38,42 @@ impl<'a> GameState<'a> {
     pub fn render(&mut self, thread: &raylib::RaylibThread) {
         let fps = self.rl.get_fps();
         let time = self.rl.get_time();
+
         let mut d = self.rl.begin_drawing(thread);
 
         d.clear_background(Color::DARKGRAY);
 
         let player = &self.player;
 
-        // Draw the player block
-        d.draw_rectangle(
-            player.position.x as i32,
-            player.position.y as i32,
-            player.block_size as i32,
-            player.block_size as i32,
-            Color::YELLOW,
+        let source_rec = ffi::Rectangle {
+            x: 0.0,
+            y: 0.0,
+            width: player.texture.width as f32,
+            height: player.texture.height as f32,
+        };
+        let dest_rec = ffi::Rectangle {
+            x: player.position.x,
+            y: player.position.y,
+            width: player.texture.width as f32,
+            height: player.texture.height as f32,
+        };
+        let origin = ffi::Vector2 {
+            x: player.texture.width as f32 / 2.0,
+            y: player.texture.height as f32 / 2.0,
+        };
+        let rotation = match player.position.direction {
+            crate::player::Direction::Up => 180.0,
+            crate::player::Direction::Down => 0.0,
+            crate::player::Direction::Left => 90.0,
+            crate::player::Direction::Right => 270.0,
+        };
+        d.draw_texture_pro(
+            &player.texture,
+            source_rec,
+            dest_rec,
+            origin,
+            rotation,
+            Color::WHITE,
         );
 
         // Draw instructions
@@ -105,10 +131,10 @@ impl<'a> GameState<'a> {
                     let rect = ffi::Rectangle {
                         x: bolter_data.position.x,
                         y: bolter_data.position.y,
-                        width: 5.0,
-                        height: 5.0,
+                        width: 14.0,
+                        height: 14.0,
                     };
-                    let origin = ffi::Vector2 { x: 2.5, y: 2.5 };
+                    let origin = ffi::Vector2 { x: 7.0, y: 7.0 };
                     // Rotation based on distance traveled (position sum) and time
                     let rotation = ((bolter_data.position.x + bolter_data.position.y) * 0.5
                         + time as f32 * 360.0)

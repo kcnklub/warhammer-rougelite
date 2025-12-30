@@ -21,10 +21,10 @@ impl AllProjectiles {
             match projectile {
                 Projectile::Bolter(bolter_data) => match bolter_data.position.direction {
                     crate::player::Direction::Up => {
-                        bolter_data.position.y += bolter_data.speed * delta
+                        bolter_data.position.y -= bolter_data.speed * delta
                     }
                     crate::player::Direction::Down => {
-                        bolter_data.position.y -= bolter_data.speed * delta
+                        bolter_data.position.y += bolter_data.speed * delta
                     }
                     crate::player::Direction::Left => {
                         bolter_data.position.x -= bolter_data.speed * delta
@@ -52,7 +52,7 @@ pub struct BolterProjectile {
 impl BolterProjectile {
     pub fn new(position: Position) -> Self {
         BolterProjectile {
-            speed: 200.0,
+            speed: 600.0,
             position,
         }
     }

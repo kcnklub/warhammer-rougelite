@@ -4,6 +4,7 @@ use crate::{
     weapons::{BolterData, Weapon},
 };
 use raylib::ffi::KeyboardKey;
+use raylib::prelude::*;
 
 #[derive(Clone, Copy)]
 pub enum Direction {
@@ -30,22 +31,25 @@ pub struct Player {
     // game mechanic data
     pub statuses: Vec<Status>,
     pub weapons: Vec<Weapon>,
+
+    pub texture: Texture2D,
 }
 
 impl Player {
-    pub fn new() -> Self {
+    pub fn new(texture: Texture2D) -> Self {
         let mut player = Player {
             position: Position {
                 x: 400.0,
                 y: 400.0,
                 direction: Direction::Right,
             },
-            move_speed: 200.0,
+            move_speed: 300.0,
             block_size: 20.0,
             health: 100.0,
             max_health: 100.0,
             statuses: vec![],
             weapons: vec![],
+            texture: texture,
         };
 
         // Add all status effects for testing
@@ -66,10 +70,6 @@ impl Player {
         player.add_status(Status::Slow(SlowStatus {
             speed_multiplier: 0.5,
             remaining_duration: 12.0,
-        }));
-
-        player.add_status(Status::Stun(StunStatus {
-            remaining_duration: 3.0,
         }));
 
         player.add_status(Status::Regeneration(RegenerationStatus {
@@ -100,20 +100,20 @@ impl Player {
         // Handle WASD input
         if rl.is_key_down(KeyboardKey::KEY_W) {
             self.position.y -= effective_speed * delta;
+            self.position.direction = Direction::Up;
         }
         if rl.is_key_down(KeyboardKey::KEY_S) {
             self.position.y += effective_speed * delta;
+            self.position.direction = Direction::Down;
         }
         if rl.is_key_down(KeyboardKey::KEY_A) {
             self.position.x -= effective_speed * delta;
+            self.position.direction = Direction::Left;
         }
         if rl.is_key_down(KeyboardKey::KEY_D) {
             self.position.x += effective_speed * delta;
+            self.position.direction = Direction::Right;
         }
-
-        // Keep player within screen bounds
-        self.position.x = self.position.x.max(0.0).min(800.0 - self.block_size);
-        self.position.y = self.position.y.max(0.0).min(800.0 - self.block_size);
     }
 
     pub fn handle_status_effects(&mut self, delta: &f32) {

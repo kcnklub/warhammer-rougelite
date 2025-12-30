@@ -6,7 +6,10 @@ fn main() {
         .title("Move Block with WASD")
         .build();
 
-    let player = player::Player::new();
+    let texture = rl
+        .load_texture(&thread, "./assests/sprites/dark-fighter.png")
+        .unwrap();
+    let player = player::Player::new(texture);
 
     let mut game_state = game_state::GameState::new(&mut rl, player);
 
