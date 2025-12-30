@@ -24,7 +24,6 @@ pub struct Position {
 pub struct Player {
     pub position: Position,
     pub move_speed: f32,
-    pub block_size: f32,
     pub health: f32,
     pub max_health: f32,
 
@@ -36,53 +35,16 @@ pub struct Player {
 }
 
 impl Player {
-    pub fn new(texture: Texture2D) -> Self {
+    pub fn new(position: Position, texture: Texture2D) -> Self {
         let mut player = Player {
-            position: Position {
-                x: 400.0,
-                y: 400.0,
-                direction: Direction::Right,
-            },
+            position,
             move_speed: 300.0,
-            block_size: 20.0,
             health: 100.0,
             max_health: 100.0,
             statuses: vec![],
             weapons: vec![],
             texture: texture,
         };
-
-        // Add all status effects for testing
-        player.add_status(Status::Poison(PoisonStatus {
-            damage_per_tick: 5.0,
-            tick_interval: 1.0,
-            remaining_duration: 10.0,
-            time_since_last_tick: 0.0,
-        }));
-
-        player.add_status(Status::Burn(BurnStatus {
-            damage_per_tick: 3.0,
-            tick_interval: 0.5,
-            remaining_duration: 8.0,
-            time_since_last_tick: 0.0,
-        }));
-
-        player.add_status(Status::Slow(SlowStatus {
-            speed_multiplier: 0.5,
-            remaining_duration: 12.0,
-        }));
-
-        player.add_status(Status::Regeneration(RegenerationStatus {
-            heal_per_tick: 2.0,
-            tick_interval: 1.0,
-            remaining_duration: 15.0,
-            time_since_last_tick: 0.0,
-        }));
-
-        player.add_status(Status::SpeedBoost(SpeedBoostStatus {
-            speed_multiplier: 1.5,
-            remaining_duration: 10.0,
-        }));
 
         player.add_weapon(Weapon::Bolter(BolterData {
             damage: 1.0,
