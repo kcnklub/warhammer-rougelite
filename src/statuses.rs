@@ -38,7 +38,7 @@ impl Status {
 
 #[derive(Clone, Copy)]
 pub struct PoisonStatus {
-    pub damage_per_tick: f32,
+    pub damage_per_tick: i32,
     pub tick_interval: f32,
     pub remaining_duration: f32,
     pub time_since_last_tick: f32,
@@ -46,7 +46,7 @@ pub struct PoisonStatus {
 
 #[derive(Clone, Copy)]
 pub struct BurnStatus {
-    pub damage_per_tick: f32,
+    pub damage_per_tick: i32,
     pub tick_interval: f32,
     pub remaining_duration: f32,
     pub time_since_last_tick: f32,
@@ -65,7 +65,7 @@ pub struct StunStatus {
 
 #[derive(Clone, Copy)]
 pub struct RegenerationStatus {
-    pub heal_per_tick: f32,
+    pub heal_per_tick: i32,
     pub tick_interval: f32,
     pub remaining_duration: f32,
     pub time_since_last_tick: f32,

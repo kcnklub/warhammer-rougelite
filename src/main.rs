@@ -1,6 +1,8 @@
 use raylib_testing::{
     game_state,
-    player::{self, Direction, Position},
+    player::{self},
+    renderer::render_game_state,
+    utils::{Direction, Position},
 };
 
 fn main() {
@@ -15,8 +17,12 @@ fn main() {
     // TODO split game integration loop from FPS so I don't need this.
     rl.set_target_fps(144);
 
-    let texture = rl
+    let player_texture = rl
         .load_texture(&thread, "./assests/sprites/dark-fighter.png")
+        .unwrap();
+
+    let enemy_texture = rl
+        .load_texture(&thread, "./assests/sprites/crescent-moon-alien.png")
         .unwrap();
 
     let position = Position {
@@ -24,13 +30,13 @@ fn main() {
         y: (rl.get_screen_height() / 2) as f32,
         direction: Direction::Right,
     };
-    let player = player::Player::new(position, texture);
+    let player = player::Player::new(position, player_texture);
 
-    let mut game_state = game_state::GameState::new(&mut rl, player);
+    let mut game_state = game_state::GameState::new(&mut rl, player, &enemy_texture);
 
     while !game_state.rl.window_should_close() {
         let delta = game_state.rl.get_frame_time(); // only get the delta a single time.
         game_state.game_tick(&delta);
-        game_state.render(&thread);
+        render_game_state(&mut game_state, &thread);
     }
 }

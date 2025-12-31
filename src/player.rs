@@ -1,46 +1,35 @@
 use crate::{
+    enemy::AllEnemies,
     projectile::{BolterProjectile, Projectile},
     statuses::*,
     weapons::{BolterData, Weapon},
 };
+
+use crate::utils::{Direction, Position};
 use raylib::ffi::KeyboardKey;
 use raylib::prelude::*;
-
-#[derive(Clone, Copy)]
-pub enum Direction {
-    Up,
-    Down,
-    Left,
-    Right,
-}
-
-#[derive(Clone, Copy)]
-pub struct Position {
-    pub x: f32,
-    pub y: f32,
-    pub direction: Direction,
-}
 
 pub struct Player {
     pub position: Position,
     pub move_speed: f32,
-    pub health: f32,
-    pub max_health: f32,
+    pub health: i32,
+    pub max_health: i32,
 
     // game mechanic data
     pub statuses: Vec<Status>,
     pub weapons: Vec<Weapon>,
 
+    // Rendering bits
     pub texture: Texture2D,
 }
 
-impl Player {
+impl<'a> Player {
     pub fn new(position: Position, texture: Texture2D) -> Self {
         let mut player = Player {
             position,
             move_speed: 300.0,
-            health: 100.0,
-            max_health: 100.0,
+            health: 100,
+            max_health: 100,
             statuses: vec![],
             weapons: vec![],
             texture: texture,
@@ -55,7 +44,7 @@ impl Player {
         player
     }
 
-    pub fn handle_movement(&mut self, rl: &raylib::RaylibHandle, delta: &f32) {
+    pub fn handle_user_input(&mut self, rl: &raylib::RaylibHandle, delta: &f32) {
         let speed_multiplier = self.calculate_speed_multiplier();
         let effective_speed = self.move_speed * speed_multiplier;
 
@@ -122,7 +111,7 @@ impl Player {
         }
 
         // Clamp health between 0 and max_health
-        self.health = self.health.max(0.0).min(self.max_health);
+        self.health = self.health.max(0).min(self.max_health);
 
         // Remove expired statuses
         self.statuses.retain(|status| !status.is_expired());
@@ -193,5 +182,29 @@ impl Player {
             .retain(|s| !matches!((s, &weapon), (Weapon::Bolter(_), Weapon::Bolter(_))));
 
         self.weapons.push(weapon);
+    }
+
+    pub fn handle_enemies(&mut self, enemies: &mut AllEnemies<'a>, delta: &f32) {
+        for enemy in enemies.enemies.iter_mut() {
+            let enemy_rec = Rectangle {
+                x: enemy.position.x,
+                y: enemy.position.y,
+                width: enemy.texture.width as f32,
+                height: enemy.texture.height as f32,
+            };
+
+            let player_point = Vector2 {
+                x: self.position.x,
+                y: self.position.y,
+            };
+
+            enemy.time_since_last_attack += delta;
+            if enemy_rec.check_collision_circle_rec(player_point, (self.texture.width / 2) as f32) {
+                if enemy.time_since_last_attack >= enemy.attack_speed {
+                    self.health -= enemy.damage;
+                    enemy.time_since_last_attack = 0.0
+                }
+            }
+        }
     }
 }
