@@ -124,11 +124,34 @@ impl<'a> Player {
                 Weapon::Bolter(data) => {
                     data.time_since_last_tick += delta;
 
+                    let offset = (self.texture.width / 2) as f32;
+
                     if data.time_since_last_tick >= data.tick_interval {
                         println!("Firing the bolter");
-                        res.push(Projectile::Bolter(BolterProjectile::new(
-                            self.position.clone(),
-                        )));
+
+                        let position = match self.position.direction {
+                            Direction::Up => Position {
+                                x: self.position.x,
+                                y: self.position.y - offset,
+                                direction: self.position.direction,
+                            },
+                            Direction::Down => Position {
+                                x: self.position.x,
+                                y: self.position.y + offset,
+                                direction: self.position.direction,
+                            },
+                            Direction::Right => Position {
+                                x: self.position.x + offset,
+                                y: self.position.y,
+                                direction: self.position.direction,
+                            },
+                            Direction::Left => Position {
+                                x: self.position.x - offset,
+                                y: self.position.y,
+                                direction: self.position.direction,
+                            },
+                        };
+                        res.push(Projectile::Bolter(BolterProjectile::new(position)));
                         data.time_since_last_tick = 0.0;
                     }
                 }
@@ -206,5 +229,9 @@ impl<'a> Player {
                 }
             }
         }
+    }
+
+    pub fn is_alive(&self) -> bool {
+        self.health > 0
     }
 }

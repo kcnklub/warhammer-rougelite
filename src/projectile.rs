@@ -7,14 +7,17 @@ use crate::{
     utils::{Direction, Position},
 };
 
-pub struct AllProjectiles {
+pub struct AllProjectiles<'a> {
     pub projectiles: Vec<Projectile>,
+
+    pub texture: &'a Texture2D,
 }
 
-impl AllProjectiles {
-    pub fn new() -> Self {
+impl<'a> AllProjectiles<'a> {
+    pub fn new(texture: &'a Texture2D) -> Self {
         AllProjectiles {
             projectiles: vec![],
+            texture,
         }
     }
     pub fn append(&mut self, new: &mut Vec<Projectile>) {
@@ -58,7 +61,8 @@ impl AllProjectiles {
             };
         }
 
-        all_enemies.enemies.retain(|enemy| enemy.health > 0);
+        // remove all enemies that are dead
+        all_enemies.enemies.retain(|enemy| enemy.is_alive());
     }
 }
 
@@ -78,7 +82,7 @@ impl BolterProjectile {
     pub fn new(position: Position) -> Self {
         BolterProjectile {
             speed: 600.0,
-            damage: 20,
+            damage: 50,
             position,
         }
     }

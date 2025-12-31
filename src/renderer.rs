@@ -8,7 +8,7 @@ use crate::projectile::Projectile;
 
 pub fn render_game_state(game_state: &mut GameState, thread: &raylib::RaylibThread) {
     let fps = game_state.rl.get_fps();
-    let time = game_state.rl.get_time();
+    let _time = game_state.rl.get_time();
 
     let mut d = game_state.rl.begin_drawing(thread);
 
@@ -18,7 +18,7 @@ pub fn render_game_state(game_state: &mut GameState, thread: &raylib::RaylibThre
     d.draw_text(&format!("FPS: {}", fps), 400, 10, 20, Color::GREEN);
 
     render_player(&mut d, &game_state.player);
-    render_projectiles(&mut d, &game_state.projectiles, &time);
+    render_projectiles(&mut d, &game_state.projectiles);
     render_enemies(&mut d, &game_state.enemies);
 }
 
@@ -141,24 +141,42 @@ pub fn render_enemies(d: &mut RaylibDrawHandle<'_>, enemies: &AllEnemies) {
     }
 }
 
-fn render_projectiles(d: &mut RaylibDrawHandle<'_>, projectiles: &AllProjectiles, time: &f64) {
+fn render_projectiles(d: &mut RaylibDrawHandle<'_>, projectiles: &AllProjectiles) {
     let active_projectiles = &projectiles.projectiles;
     for projetile in active_projectiles {
         match projetile {
             Projectile::Bolter(bolter_data) => {
-                let rect = ffi::Rectangle {
+                let source_rec = ffi::Rectangle {
+                    x: 0.0,
+                    y: 0.0,
+                    width: projectiles.texture.width as f32,
+                    height: projectiles.texture.height as f32,
+                };
+                let dest_rec = ffi::Rectangle {
                     x: bolter_data.position.x,
                     y: bolter_data.position.y,
-                    width: 14.0,
-                    height: 14.0,
+                    width: projectiles.texture.width as f32,
+                    height: projectiles.texture.height as f32,
                 };
-                let origin = ffi::Vector2 { x: 7.0, y: 7.0 };
-                // Rotation based on distance traveled (position sum) and time
-                // careful with the clone here, probably doesn't matter but it is strange to have to clone
-                let rotation = ((bolter_data.position.x + bolter_data.position.y) * 0.5
-                    + time.clone() as f32 * 360.0)
-                    % 360.0;
-                d.draw_rectangle_pro(rect, origin, rotation, Color::YELLOW);
+                let origin = ffi::Vector2 {
+                    x: projectiles.texture.width as f32 / 2.0,
+                    y: projectiles.texture.height as f32 / 2.0,
+                };
+
+                let rotation = match bolter_data.position.direction {
+                    Direction::Up => 270.0,
+                    Direction::Down => 90.0,
+                    Direction::Left => 180.0,
+                    Direction::Right => 0.0,
+                };
+                d.draw_texture_pro(
+                    &projectiles.texture,
+                    source_rec,
+                    dest_rec,
+                    origin,
+                    rotation,
+                    Color::WHITE,
+                );
             }
         }
     }

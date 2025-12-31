@@ -5,7 +5,7 @@ use crate::{enemy::AllEnemies, player::Player, projectile::AllProjectiles};
 pub struct GameState<'a> {
     pub rl: &'a mut raylib::RaylibHandle,
     pub player: Player,
-    pub projectiles: AllProjectiles,
+    pub projectiles: AllProjectiles<'a>,
     pub enemies: AllEnemies<'a>,
 }
 
@@ -14,13 +14,18 @@ impl<'a> GameState<'a> {
         rl: &'a mut raylib::RaylibHandle,
         player: Player,
         enemy_texture: &'a Texture2D,
+        bullet_texture: &'a Texture2D,
     ) -> Self {
         GameState {
             rl,
             player,
-            projectiles: AllProjectiles::new(),
+            projectiles: AllProjectiles::new(bullet_texture),
             enemies: AllEnemies::new(enemy_texture),
         }
+    }
+
+    pub fn player_alive(&self) -> bool {
+        self.player.is_alive()
     }
 
     pub fn game_tick(&mut self, delta: &f32) {

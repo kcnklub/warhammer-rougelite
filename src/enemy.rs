@@ -1,3 +1,4 @@
+use rand::prelude::*;
 use raylib::prelude::*;
 
 use crate::utils::{Direction, Position};
@@ -32,40 +33,25 @@ impl<'a> AllEnemies<'a> {
     pub fn tick(&mut self, player_position: &Position, delta: &f32) {
         let speed = 1.0;
         for enemy in self.enemies.iter_mut() {
-            enemy.position.x += (speed * delta) * (player_position.x - enemy.position.x);
-            enemy.position.y += (speed * delta) * (player_position.y - enemy.position.y);
-        }
-    }
-
-    pub fn follow_player(&mut self, player_position: &Position, delta: &f32) {
-        let speed = 1.0;
-        for enemy in self.enemies.iter_mut() {
-            let player_pos = Vector2 {
-                x: player_position.x,
-                y: player_position.y,
-            };
-            let enemy_pos = Vector2 {
-                x: enemy.position.x,
-                y: enemy.position.y,
-            };
-            let distance = enemy_pos.distance_to(player_pos);
-            //let speed = speed * distance.log(100.0);
-            if distance >= 200.0 {
-                enemy.position.x += (speed + (player_position.x - enemy.position.x)) * delta;
-                enemy.position.y += (speed + (player_position.y - enemy.position.y)) * delta;
-            }
+            enemy.position.x += (speed * delta) * ((player_position.x - enemy.position.x) / 2.0);
+            enemy.position.y += (speed * delta) * ((player_position.y - enemy.position.y) / 2.0);
         }
     }
 
     pub fn spawn_enemies(&mut self, delta: &f32) {
         self.time_since_spawn += delta;
 
+        let mut rng = rand::rng();
+
+        let x: i32 = rng.random_range(1..2480);
+        let y: i32 = rng.random_range(1..200);
+
         if self.time_since_spawn >= self.spawn_rate {
             let spawned_enemy = Enemy::new(
                 30,
                 Position {
-                    x: 200.0,
-                    y: 200.0,
+                    x: x as f32,
+                    y: y as f32,
                     direction: Direction::Down,
                 },
                 self.texture,
@@ -97,5 +83,9 @@ impl<'a> Enemy<'a> {
             position,
             texture,
         }
+    }
+
+    pub fn is_alive(&self) -> bool {
+        self.health > 0
     }
 }
