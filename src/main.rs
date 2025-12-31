@@ -1,4 +1,4 @@
-use raylib_testing::{
+use warhammer_rougelite::{
     game_state,
     player::{self},
     renderer::render_game_state,
