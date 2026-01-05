@@ -12,7 +12,7 @@ pub fn render_game_state(game_state: &mut GameState, thread: &raylib::RaylibThre
 
     let mut d = game_state.rl.begin_drawing(thread);
 
-    d.clear_background(Color::DARKGRAY);
+    d.clear_background(Color::DARKBROWN);
     // Draw instructions
     d.draw_text("Use WASD to move", 10, 10, 20, Color::WHITE);
     d.draw_text(&format!("FPS: {}", fps), 400, 10, 20, Color::GREEN);
@@ -40,10 +40,10 @@ fn render_player(d: &mut RaylibDrawHandle<'_>, player: &Player) {
         y: player.texture.height as f32 / 2.0,
     };
     let rotation = match player.position.direction {
-        Direction::Up => 180.0,
+        Direction::Up => 0.0,
         Direction::Down => 0.0,
-        Direction::Left => 90.0,
-        Direction::Right => 270.0,
+        Direction::Left => 0.0,
+        Direction::Right => 0.0,
     };
     d.draw_circle_lines(
         player.position.x as i32,
@@ -108,10 +108,17 @@ fn render_player(d: &mut RaylibDrawHandle<'_>, player: &Player) {
 
 pub fn render_enemies(d: &mut RaylibDrawHandle<'_>, enemies: &AllEnemies) {
     for enemy in &enemies.enemies {
+        let source_width = match enemy.position.direction {
+            Direction::Up => enemy.texture.width as f32,
+            Direction::Down => enemy.texture.width as f32,
+            Direction::Left => enemy.texture.width as f32,
+            Direction::Right => -1.0 * enemy.texture.width as f32,
+        };
+
         let source_rec = ffi::Rectangle {
             x: 0.0,
             y: 0.0,
-            width: enemy.texture.width as f32,
+            width: source_width,
             height: enemy.texture.height as f32,
         };
         let dest_rec = ffi::Rectangle {
@@ -124,19 +131,32 @@ pub fn render_enemies(d: &mut RaylibDrawHandle<'_>, enemies: &AllEnemies) {
             x: enemy.texture.width as f32 / 2.0,
             y: enemy.texture.height as f32 / 2.0,
         };
-        let rotation = match enemy.position.direction {
-            Direction::Up => 180.0,
-            Direction::Down => 0.0,
-            Direction::Left => 90.0,
-            Direction::Right => 270.0,
-        };
         d.draw_texture_pro(
             &enemy.texture,
             source_rec,
             dest_rec,
             origin,
-            rotation,
+            0.0,
             Color::WHITE,
+        );
+
+        let starting_width = enemy.texture.width as f32;
+        d.draw_rectangle(
+            enemy.position.x as i32,
+            enemy.position.y as i32,
+            starting_width as i32,
+            5,
+            Color::DARKGRAY,
+        );
+
+        let ratio = enemy.health as f32 / enemy.max_health as f32;
+        let current_width = starting_width * ratio;
+        d.draw_rectangle(
+            enemy.position.x as i32,
+            enemy.position.y as i32,
+            current_width as i32,
+            5,
+            Color::RED,
         );
     }
 }
@@ -177,6 +197,7 @@ fn render_projectiles(d: &mut RaylibDrawHandle<'_>, projectiles: &AllProjectiles
                     rotation,
                     Color::WHITE,
                 );
+                d.draw_rectangle_lines_ex(dest_rec, 5.0, Color::RED);
             }
         }
     }

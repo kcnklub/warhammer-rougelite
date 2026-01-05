@@ -48,21 +48,26 @@ impl<'a> AllProjectiles<'a> {
                             width: enemy.texture.width as f32,
                             height: enemy.texture.height as f32,
                         };
-                        let proj_point = Vector2 {
+
+                        let dest_rec = Rectangle {
                             x: bolter_data.position.x,
                             y: bolter_data.position.y,
+                            width: self.texture.width as f32,
+                            height: self.texture.height as f32,
                         };
-
-                        if enemy_rec.check_collision_point_rec(proj_point) {
+                        if enemy_rec.check_collision_recs(&dest_rec) {
                             enemy.health -= bolter_data.damage;
+                            println!("Enemy Health: {}", enemy.health);
+                            bolter_data.hits += 1;
                         }
                     }
                 }
             };
         }
 
-        // remove all enemies that are dead
-        all_enemies.enemies.retain(|enemy| enemy.is_alive());
+        self.projectiles.retain(|&projectile| match projectile {
+            Projectile::Bolter(bolter_projectile) => bolter_projectile.hits == 0,
+        });
     }
 }
 
@@ -75,6 +80,7 @@ pub enum Projectile {
 pub struct BolterProjectile {
     pub speed: f32,
     pub damage: i32,
+    pub hits: i32,
     pub position: Position,
 }
 
@@ -82,7 +88,8 @@ impl BolterProjectile {
     pub fn new(position: Position) -> Self {
         BolterProjectile {
             speed: 600.0,
-            damage: 50,
+            damage: 10,
+            hits: 0,
             position,
         }
     }

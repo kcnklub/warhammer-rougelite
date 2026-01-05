@@ -15,14 +15,14 @@ fn main() {
         .build();
 
     // TODO split game integration loop from FPS so I don't need this.
-    rl.set_target_fps(144);
+    //rl.set_target_fps(144);
 
     let player_texture = rl
-        .load_texture(&thread, "./assests/sprites/dark-fighter.png")
+        .load_texture(&thread, "./assests/sprites/marine.png")
         .unwrap();
 
     let enemy_texture = rl
-        .load_texture(&thread, "./assests/sprites/crescent-moon-alien.png")
+        .load_texture(&thread, "./assests/sprites/servo-skull.png")
         .unwrap();
 
     let bullet_texture = rl
