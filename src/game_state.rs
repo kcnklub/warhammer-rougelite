@@ -1,14 +1,17 @@
 use raylib::prelude::*;
 
-use crate::{enemy::AllEnemies, player::Player, projectile::AllProjectiles};
+use crate::{
+    enemy::AllEnemies, player::Player, projectile::AllProjectiles, renderer::background::Background,
+};
 
-pub const DEBUG_MODE: bool = false;
+pub const DEBUG_MODE: bool = true;
 
 pub struct GameState<'a> {
     pub rl: &'a mut raylib::RaylibHandle,
     pub player: Player,
     pub projectiles: AllProjectiles<'a>,
     pub enemies: AllEnemies<'a>,
+    pub background: Background<'a>,
 }
 
 impl<'a> GameState<'a> {
@@ -17,12 +20,14 @@ impl<'a> GameState<'a> {
         player: Player,
         enemy_texture: &'a Texture2D,
         bullet_texture: &'a Texture2D,
+        ground_texture: &'a Texture2D,
     ) -> Self {
         GameState {
             rl,
             player,
             projectiles: AllProjectiles::new(bullet_texture),
             enemies: AllEnemies::new(enemy_texture),
+            background: Background::new(ground_texture),
         }
     }
 
