@@ -2,7 +2,7 @@ use raylib::prelude::*;
 
 use crate::{enemy::AllEnemies, player::Player, projectile::AllProjectiles};
 
-pub const DEBUG_MODE: bool = false;
+pub const DEBUG_MODE: bool = true;
 
 pub struct GameState<'a> {
     pub rl: &'a mut raylib::RaylibHandle,

@@ -146,24 +146,13 @@ pub fn render_enemies(d: &mut RaylibDrawHandle<'_>, enemies: &AllEnemies) {
         );
 
         if game_state::DEBUG_MODE {
-            let starting_width = enemy.texture.width as f32;
-            d.draw_rectangle(
-                enemy.position.x as i32,
-                enemy.position.y as i32,
-                starting_width as i32,
-                5,
-                Color::DARKGRAY,
-            );
-
-            let ratio = enemy.health as f32 / enemy.max_health as f32;
-            let current_width = starting_width * ratio;
-            d.draw_rectangle(
-                enemy.position.x as i32,
-                enemy.position.y as i32,
-                current_width as i32,
-                5,
-                Color::RED,
-            );
+            let debug_rect = ffi::Rectangle {
+                x: enemy.position.x - origin.x,
+                y: enemy.position.y - origin.y,
+                width: enemy.texture.width as f32,
+                height: enemy.texture.height as f32,
+            };
+            d.draw_rectangle_lines_ex(debug_rect, 2.0, Color::RED);
         }
     }
 }
@@ -205,7 +194,15 @@ fn render_projectiles(d: &mut RaylibDrawHandle<'_>, projectiles: &AllProjectiles
                     Color::WHITE,
                 );
                 if game_state::DEBUG_MODE {
-                    d.draw_rectangle_lines_ex(dest_rec, 5.0, Color::RED);
+                    if game_state::DEBUG_MODE {
+                        let debug_rect = ffi::Rectangle {
+                            x: bolter_data.position.x - origin.x,
+                            y: bolter_data.position.y - origin.y,
+                            width: projectiles.texture.width as f32,
+                            height: projectiles.texture.height as f32,
+                        };
+                        d.draw_rectangle_lines_ex(debug_rect, 2.0, Color::RED);
+                    }
                 }
             }
         }
