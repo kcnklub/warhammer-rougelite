@@ -87,7 +87,7 @@ pub struct BolterProjectile {
 impl BolterProjectile {
     pub fn new(position: Position) -> Self {
         BolterProjectile {
-            speed: 600.0,
+            speed: 1000.0,
             damage: 10,
             hits: 0,
             position,

@@ -1,5 +1,8 @@
 use crate::{
-    enemy::AllEnemies, game_state::GameState, player::Player, projectile::AllProjectiles,
+    enemy::AllEnemies,
+    game_state::{self, GameState},
+    player::Player,
+    projectile::AllProjectiles,
     utils::Direction,
 };
 use raylib::{color::Color, prelude::*};
@@ -45,12 +48,14 @@ fn render_player(d: &mut RaylibDrawHandle<'_>, player: &Player) {
         Direction::Left => 0.0,
         Direction::Right => 0.0,
     };
-    d.draw_circle_lines(
-        player.position.x as i32,
-        player.position.y as i32,
-        (player.texture.width / 2) as f32,
-        Color::RED,
-    );
+    if game_state::DEBUG_MODE {
+        d.draw_circle_lines(
+            player.position.x as i32,
+            player.position.y as i32,
+            (player.texture.width / 2) as f32,
+            Color::RED,
+        );
+    }
 
     d.draw_texture_pro(
         &player.texture,
@@ -140,24 +145,26 @@ pub fn render_enemies(d: &mut RaylibDrawHandle<'_>, enemies: &AllEnemies) {
             Color::WHITE,
         );
 
-        let starting_width = enemy.texture.width as f32;
-        d.draw_rectangle(
-            enemy.position.x as i32,
-            enemy.position.y as i32,
-            starting_width as i32,
-            5,
-            Color::DARKGRAY,
-        );
+        if game_state::DEBUG_MODE {
+            let starting_width = enemy.texture.width as f32;
+            d.draw_rectangle(
+                enemy.position.x as i32,
+                enemy.position.y as i32,
+                starting_width as i32,
+                5,
+                Color::DARKGRAY,
+            );
 
-        let ratio = enemy.health as f32 / enemy.max_health as f32;
-        let current_width = starting_width * ratio;
-        d.draw_rectangle(
-            enemy.position.x as i32,
-            enemy.position.y as i32,
-            current_width as i32,
-            5,
-            Color::RED,
-        );
+            let ratio = enemy.health as f32 / enemy.max_health as f32;
+            let current_width = starting_width * ratio;
+            d.draw_rectangle(
+                enemy.position.x as i32,
+                enemy.position.y as i32,
+                current_width as i32,
+                5,
+                Color::RED,
+            );
+        }
     }
 }
 
@@ -197,7 +204,9 @@ fn render_projectiles(d: &mut RaylibDrawHandle<'_>, projectiles: &AllProjectiles
                     rotation,
                     Color::WHITE,
                 );
-                d.draw_rectangle_lines_ex(dest_rec, 5.0, Color::RED);
+                if game_state::DEBUG_MODE {
+                    d.draw_rectangle_lines_ex(dest_rec, 5.0, Color::RED);
+                }
             }
         }
     }

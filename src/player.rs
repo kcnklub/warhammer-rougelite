@@ -37,7 +37,7 @@ impl<'a> Player {
 
         player.add_weapon(Weapon::Bolter(BolterData {
             damage: 1.0,
-            tick_interval: 1.0,
+            tick_interval: 0.5,
             time_since_last_tick: 0.0,
         }));
 

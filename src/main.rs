@@ -26,7 +26,7 @@ fn main() {
         .unwrap();
 
     let bullet_texture = rl
-        .load_texture(&thread, "./assests/sprites/bullet.png")
+        .load_texture(&thread, "./assests/sprites/bullet_new.png")
         .unwrap();
 
     let position = Position {
