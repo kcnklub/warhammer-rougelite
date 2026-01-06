@@ -9,6 +9,8 @@ use raylib::{color::Color, prelude::*};
 
 use crate::projectile::Projectile;
 
+pub mod background;
+
 pub fn render_game_state(game_state: &mut GameState, thread: &raylib::RaylibThread) {
     let fps = game_state.rl.get_fps();
     let _time = game_state.rl.get_time();
@@ -46,6 +48,7 @@ pub fn render_game_state(game_state: &mut GameState, thread: &raylib::RaylibThre
         render_enemies(&mut d2, &game_state.enemies);
     }
 
+    // === SCREEN SPACE UI (after camera - draws on top) ===
     d.draw_text("Use WASD to move", 10, 10, 20, Color::WHITE);
     d.draw_text(&format!("FPS: {}", fps), 400, 10, 20, Color::GREEN);
     render_player_ui(&mut d, &game_state.player);
