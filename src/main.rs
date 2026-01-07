@@ -33,6 +33,10 @@ fn main() {
         .load_texture(&thread, "./assests/sprites/ground-tile-01.png")
         .unwrap();
 
+    let ground_texture2 = rl
+        .load_texture(&thread, "./assests/sprites/ground-tile-02.png")
+        .unwrap();
+
     let position = Position {
         x: (rl.get_screen_width() / 2) as f32,
         y: (rl.get_screen_height() / 2) as f32,
@@ -46,6 +50,7 @@ fn main() {
         &enemy_texture,
         &bullet_texture,
         &ground_texture,
+        &ground_texture2,
     );
 
     while !game_state.rl.window_should_close() && game_state.player_alive() {

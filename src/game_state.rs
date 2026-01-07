@@ -20,14 +20,15 @@ impl<'a> GameState<'a> {
         player: Player,
         enemy_texture: &'a Texture2D,
         bullet_texture: &'a Texture2D,
-        ground_texture: &'a Texture2D,
+        ground_texture1: &'a Texture2D,
+        ground_texture2: &'a Texture2D,
     ) -> Self {
         GameState {
             rl,
             player,
             projectiles: AllProjectiles::new(bullet_texture),
             enemies: AllEnemies::new(enemy_texture),
-            background: Background::new(ground_texture),
+            background: Background::new(ground_texture1, ground_texture2),
         }
     }
 

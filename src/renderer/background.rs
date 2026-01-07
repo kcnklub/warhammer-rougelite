@@ -1,17 +1,35 @@
 use raylib::prelude::*;
 
 pub struct Background<'a> {
-    texture: &'a Texture2D,
+    texture1: &'a Texture2D,
+    texture2: &'a Texture2D,
+    texture_size: f32,
     tile_size: f32,
     parallax_factor: f32,
 }
 
 impl<'a> Background<'a> {
-    pub fn new(texture: &'a Texture2D) -> Self {
+    pub fn new(texture1: &'a Texture2D, texture2: &'a Texture2D) -> Self {
         Self {
-            texture,
-            tile_size: 128.0,
+            texture1,
+            texture2,
+            texture_size: 128.0,
+            tile_size: 512.0,
             parallax_factor: 0.7,
+        }
+    }
+
+    // Deterministic hash function to choose tile based on coordinates
+    fn select_tile(&self, tile_x: i32, tile_y: i32) -> &Texture2D {
+        // Simple hash using prime number multiplication for good distribution
+        let hash =
+            ((tile_x.wrapping_mul(374761393)).wrapping_add(tile_y.wrapping_mul(668265263))) as u32;
+
+        // Use hash to pick texture (50/50 split)
+        if hash % 2 == 0 {
+            self.texture1
+        } else {
+            self.texture2
         }
     }
 
@@ -36,9 +54,12 @@ impl<'a> Background<'a> {
                 let world_x = tile_x as f32 * self.tile_size;
                 let world_y = tile_y as f32 * self.tile_size;
 
+                // Select texture based on tile coordinates
+                let texture = self.select_tile(tile_x, tile_y);
+
                 d.draw_texture_pro(
-                    self.texture,
-                    Rectangle::new(0.0, 0.0, self.tile_size, self.tile_size),
+                    texture,
+                    Rectangle::new(0.0, 0.0, self.texture_size, self.texture_size),
                     Rectangle::new(world_x, world_y, self.tile_size, self.tile_size),
                     Vector2::zero(),
                     0.0,
