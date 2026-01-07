@@ -12,6 +12,7 @@ pub struct GameState<'a> {
     pub projectiles: AllProjectiles<'a>,
     pub enemies: AllEnemies<'a>,
     pub background: Background<'a>,
+    pub elapsed_time: f32,
 }
 
 impl<'a> GameState<'a> {
@@ -29,6 +30,7 @@ impl<'a> GameState<'a> {
             projectiles: AllProjectiles::new(bullet_texture),
             enemies: AllEnemies::new(enemy_texture),
             background: Background::new(ground_texture1, ground_texture2),
+            elapsed_time: 0.0,
         }
     }
 
@@ -37,6 +39,7 @@ impl<'a> GameState<'a> {
     }
 
     pub fn game_tick(&mut self, delta: &f32) {
+        self.elapsed_time += delta;
         self.player.handle_user_input(self.rl, &delta);
         self.player.handle_status_effects(&delta);
         self.player.handle_enemies(&mut self.enemies, &delta);

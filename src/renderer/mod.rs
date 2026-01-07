@@ -54,6 +54,16 @@ pub fn render_game_state(game_state: &mut GameState, thread: &raylib::RaylibThre
     // === SCREEN SPACE UI (after camera - draws on top) ===
     d.draw_text("Use WASD to move", 10, 10, 20, Color::WHITE);
     d.draw_text(&format!("FPS: {}", fps), 400, 10, 20, Color::GREEN);
+
+    // Game Clock - centered at top
+    let minutes = (game_state.elapsed_time / 60.0) as i32;
+    let seconds = (game_state.elapsed_time % 60.0) as i32;
+    let time_text = format!("{:02}:{:02}", minutes, seconds);
+    let screen_width = d.get_screen_width();
+    let text_width = 60; // Approximate width of "MM:SS" at font size 20
+    let clock_x = (screen_width / 2) - (text_width / 2);
+    d.draw_text(&time_text, clock_x, 10, 20, Color::WHITE);
+
     render_player_ui(&mut d, &game_state.player);
 }
 
