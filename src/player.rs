@@ -209,17 +209,17 @@ impl<'a> Player {
 
     pub fn handle_enemies(&mut self, enemies: &mut AllEnemies<'a>, delta: &f32) {
         for enemy in enemies.enemies.iter_mut() {
-            let enemy_rec = Rectangle {
-                x: enemy.position.x,
-                y: enemy.position.y,
-                width: enemy.texture.width as f32,
-                height: enemy.texture.height as f32,
-            };
-
-            let player_point = Vector2 {
-                x: self.position.x,
-                y: self.position.y,
-            };
+            let texture = enemies
+                .texture_map
+                .get(&enemy.enemy_type)
+                .expect("unable to find texture");
+            let enemy_rec = Rectangle::new(
+                enemy.position.x,
+                enemy.position.y,
+                texture.width as f32,
+                texture.height as f32,
+            );
+            let player_point = Vector2::new(self.position.x, self.position.y);
 
             enemy.time_since_last_attack += delta;
             if enemy_rec.check_collision_circle_rec(player_point, (self.texture.width / 2) as f32) {

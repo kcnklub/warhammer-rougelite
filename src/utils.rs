@@ -1,4 +1,4 @@
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum Direction {
     Up,
     Down,
@@ -6,7 +6,7 @@ pub enum Direction {
     Right,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 pub struct Position {
     pub x: f32,
     pub y: f32,

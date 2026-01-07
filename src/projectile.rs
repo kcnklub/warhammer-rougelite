@@ -42,11 +42,15 @@ impl<'a> AllProjectiles<'a> {
             match projectile {
                 Projectile::Bolter(bolter_data) => {
                     for enemy in all_enemies.enemies.iter_mut() {
+                        let texture = all_enemies
+                            .texture_map
+                            .get(&enemy.enemy_type)
+                            .expect("unable to find texture");
                         let enemy_rec = Rectangle {
                             x: enemy.position.x,
                             y: enemy.position.y,
-                            width: enemy.texture.width as f32,
-                            height: enemy.texture.height as f32,
+                            width: texture.width as f32,
+                            height: texture.height as f32,
                         };
 
                         let dest_rec = Rectangle {

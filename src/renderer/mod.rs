@@ -148,39 +148,33 @@ fn render_player_ui(d: &mut RaylibDrawHandle, player: &Player) {
 
 pub fn render_enemies(d: &mut RaylibMode2D<RaylibDrawHandle>, enemies: &AllEnemies) {
     for enemy in &enemies.enemies {
+        let texture = enemies
+            .texture_map
+            .get(&enemy.enemy_type)
+            .expect("No texture found for enemy");
         let source_width = match enemy.position.direction {
-            Direction::Up => enemy.texture.width as f32,
-            Direction::Down => enemy.texture.width as f32,
-            Direction::Left => enemy.texture.width as f32,
-            Direction::Right => -1.0 * enemy.texture.width as f32,
+            Direction::Up => texture.width as f32,
+            Direction::Down => texture.width as f32,
+            Direction::Left => texture.width as f32,
+            Direction::Right => -1.0 * texture.width as f32,
         };
 
-        let source_rec = Rectangle::new(0.0, 0.0, source_width, enemy.texture.height as f32);
+        let source_rec = Rectangle::new(0.0, 0.0, source_width, texture.height as f32);
         let dest_rec = Rectangle::new(
             enemy.position.x,
             enemy.position.y,
-            enemy.texture.width as f32,
-            enemy.texture.height as f32,
+            texture.width as f32,
+            texture.height as f32,
         );
-        let origin = Vector2::new(
-            enemy.texture.width as f32 / 2.0,
-            enemy.texture.height as f32 / 2.0,
-        );
-        d.draw_texture_pro(
-            &enemy.texture,
-            source_rec,
-            dest_rec,
-            origin,
-            0.0,
-            Color::WHITE,
-        );
+        let origin = Vector2::new(texture.width as f32 / 2.0, texture.height as f32 / 2.0);
+        d.draw_texture_pro(&texture, source_rec, dest_rec, origin, 0.0, Color::WHITE);
 
         if game_state::DEBUG_MODE {
             let debug_rect = Rectangle::new(
                 enemy.position.x - origin.x,
                 enemy.position.y - origin.y,
-                enemy.texture.width as f32,
-                enemy.texture.height as f32,
+                texture.width as f32,
+                texture.height as f32,
             );
             d.draw_rectangle_lines_ex(debug_rect, 2.0, Color::RED);
         }
