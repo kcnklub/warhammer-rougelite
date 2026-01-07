@@ -11,6 +11,10 @@ use crate::projectile::Projectile;
 
 pub mod background;
 
+// higher the smaller
+// TODO fix the reverse scaling as it is just odd
+const PLAYER_SCALE: f32 = 1.5;
+
 pub fn render_game_state(game_state: &mut GameState, thread: &raylib::RaylibThread) {
     let fps = game_state.rl.get_fps();
     let _time = game_state.rl.get_time();
@@ -19,7 +23,6 @@ pub fn render_game_state(game_state: &mut GameState, thread: &raylib::RaylibThre
 
     d.clear_background(Color::BLACK);
 
-    // === CREATE CAMERA ===
     let camera = ffi::Camera2D {
         target: ffi::Vector2 {
             x: game_state.player.position.x,
@@ -55,22 +58,23 @@ pub fn render_game_state(game_state: &mut GameState, thread: &raylib::RaylibThre
 }
 
 fn render_player(d: &mut RaylibMode2D<RaylibDrawHandle>, player: &Player) {
-    let source_rec = ffi::Rectangle {
-        x: 0.0,
-        y: 0.0,
-        width: player.texture.width as f32,
-        height: player.texture.height as f32,
+    let source_width = match player.position.direction {
+        Direction::Up => player.texture.width as f32,
+        Direction::Down => player.texture.width as f32,
+        Direction::Left => -1.0 * player.texture.width as f32,
+        Direction::Right => player.texture.width as f32,
     };
-    let dest_rec = ffi::Rectangle {
-        x: player.position.x,
-        y: player.position.y,
-        width: player.texture.width as f32,
-        height: player.texture.height as f32,
-    };
-    let origin = ffi::Vector2 {
-        x: player.texture.width as f32 / 2.0,
-        y: player.texture.height as f32 / 2.0,
-    };
+    let source_rec = Rectangle::new(0.0, 0.0, source_width, player.texture.height as f32);
+    let dest_rec = Rectangle::new(
+        player.position.x,
+        player.position.y,
+        player.texture.width as f32 / PLAYER_SCALE,
+        player.texture.height as f32 / PLAYER_SCALE,
+    );
+    let origin = Vector2::new(
+        player.texture.width as f32 / (PLAYER_SCALE * 2.0),
+        player.texture.height as f32 / (PLAYER_SCALE * 2.0),
+    );
     let rotation = match player.position.direction {
         Direction::Up => 0.0,
         Direction::Down => 0.0,
@@ -81,7 +85,7 @@ fn render_player(d: &mut RaylibMode2D<RaylibDrawHandle>, player: &Player) {
         d.draw_circle_lines(
             player.position.x as i32,
             player.position.y as i32,
-            (player.texture.width / 2) as f32,
+            (player.texture.width / (PLAYER_SCALE * 2.0) as i32) as f32,
             Color::RED,
         );
     }
@@ -151,22 +155,17 @@ pub fn render_enemies(d: &mut RaylibMode2D<RaylibDrawHandle>, enemies: &AllEnemi
             Direction::Right => -1.0 * enemy.texture.width as f32,
         };
 
-        let source_rec = ffi::Rectangle {
-            x: 0.0,
-            y: 0.0,
-            width: source_width,
-            height: enemy.texture.height as f32,
-        };
-        let dest_rec = ffi::Rectangle {
-            x: enemy.position.x,
-            y: enemy.position.y,
-            width: enemy.texture.width as f32,
-            height: enemy.texture.height as f32,
-        };
-        let origin = ffi::Vector2 {
-            x: enemy.texture.width as f32 / 2.0,
-            y: enemy.texture.height as f32 / 2.0,
-        };
+        let source_rec = Rectangle::new(0.0, 0.0, source_width, enemy.texture.height as f32);
+        let dest_rec = Rectangle::new(
+            enemy.position.x,
+            enemy.position.y,
+            enemy.texture.width as f32,
+            enemy.texture.height as f32,
+        );
+        let origin = Vector2::new(
+            enemy.texture.width as f32 / 2.0,
+            enemy.texture.height as f32 / 2.0,
+        );
         d.draw_texture_pro(
             &enemy.texture,
             source_rec,
@@ -177,12 +176,12 @@ pub fn render_enemies(d: &mut RaylibMode2D<RaylibDrawHandle>, enemies: &AllEnemi
         );
 
         if game_state::DEBUG_MODE {
-            let debug_rect = ffi::Rectangle {
-                x: enemy.position.x - origin.x,
-                y: enemy.position.y - origin.y,
-                width: enemy.texture.width as f32,
-                height: enemy.texture.height as f32,
-            };
+            let debug_rect = Rectangle::new(
+                enemy.position.x - origin.x,
+                enemy.position.y - origin.y,
+                enemy.texture.width as f32,
+                enemy.texture.height as f32,
+            );
             d.draw_rectangle_lines_ex(debug_rect, 2.0, Color::RED);
         }
     }
@@ -193,22 +192,22 @@ fn render_projectiles(d: &mut RaylibMode2D<RaylibDrawHandle>, projectiles: &AllP
     for projetile in active_projectiles {
         match projetile {
             Projectile::Bolter(bolter_data) => {
-                let source_rec = ffi::Rectangle {
-                    x: 0.0,
-                    y: 0.0,
-                    width: projectiles.texture.width as f32,
-                    height: projectiles.texture.height as f32,
-                };
-                let dest_rec = ffi::Rectangle {
-                    x: bolter_data.position.x,
-                    y: bolter_data.position.y,
-                    width: projectiles.texture.width as f32,
-                    height: projectiles.texture.height as f32,
-                };
-                let origin = ffi::Vector2 {
-                    x: projectiles.texture.width as f32 / 2.0,
-                    y: projectiles.texture.height as f32 / 2.0,
-                };
+                let source_rec = Rectangle::new(
+                    0.0,
+                    0.0,
+                    projectiles.texture.width as f32,
+                    projectiles.texture.height as f32,
+                );
+                let dest_rec = Rectangle::new(
+                    bolter_data.position.x,
+                    bolter_data.position.y,
+                    projectiles.texture.width as f32 / 2.0,
+                    projectiles.texture.height as f32 / 2.0,
+                );
+                let origin = Vector2::new(
+                    projectiles.texture.width as f32 / 4.0,
+                    projectiles.texture.height as f32 / 4.0,
+                );
 
                 let rotation = match bolter_data.position.direction {
                     Direction::Up => 270.0,
@@ -226,12 +225,12 @@ fn render_projectiles(d: &mut RaylibMode2D<RaylibDrawHandle>, projectiles: &AllP
                 );
                 if game_state::DEBUG_MODE {
                     if game_state::DEBUG_MODE {
-                        let debug_rect = ffi::Rectangle {
-                            x: bolter_data.position.x - origin.x,
-                            y: bolter_data.position.y - origin.y,
-                            width: projectiles.texture.width as f32,
-                            height: projectiles.texture.height as f32,
-                        };
+                        let debug_rect = Rectangle::new(
+                            bolter_data.position.x - origin.x,
+                            bolter_data.position.y - origin.y,
+                            projectiles.texture.width as f32 / 2.0,
+                            projectiles.texture.height as f32 / 2.0,
+                        );
                         d.draw_rectangle_lines_ex(debug_rect, 2.0, Color::RED);
                     }
                 }
