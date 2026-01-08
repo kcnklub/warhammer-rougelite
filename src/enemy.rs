@@ -135,14 +135,12 @@ fn handle_player_collision<'a>(
         let distance = (dx * dx + dy * dy).sqrt();
 
         if distance > 0.0 {
-            // Apply velocity impulse for knockback (away from player, not toward)
-            let knockback_strength = 20000.0; // TODO: Tune this value during gameplay testing
-            let knockback_duration = 0.2; // Duration in seconds where enemy can't accelerate toward player
+            let knockback_strength = 20000.0;
+            let knockback_duration = 0.2;
 
             enemy.velocity_x += (dx / distance) * knockback_strength * delta;
             enemy.velocity_y += (dy / distance) * knockback_strength * delta;
 
-            // Set knockback cooldown to prevent immediate re-acceleration toward player
             enemy.knockback_cooldown = knockback_duration;
         }
     }
