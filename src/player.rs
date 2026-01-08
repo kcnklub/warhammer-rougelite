@@ -127,8 +127,6 @@ impl<'a> Player {
                     let offset = (self.texture.width / 2) as f32;
 
                     if data.time_since_last_tick >= data.tick_interval {
-                        println!("Firing the bolter");
-
                         let position = match self.position.direction {
                             Direction::Up => Position {
                                 x: self.position.x,
@@ -205,30 +203,6 @@ impl<'a> Player {
             .retain(|s| !matches!((s, &weapon), (Weapon::Bolter(_), Weapon::Bolter(_))));
 
         self.weapons.push(weapon);
-    }
-
-    pub fn handle_enemies(&mut self, enemies: &mut AllEnemies<'a>, delta: &f32) {
-        for enemy in enemies.enemies.iter_mut() {
-            let texture = enemies
-                .texture_map
-                .get(&enemy.enemy_type)
-                .expect("unable to find texture");
-            let enemy_rec = Rectangle::new(
-                enemy.position.x,
-                enemy.position.y,
-                texture.width as f32,
-                texture.height as f32,
-            );
-            let player_point = Vector2::new(self.position.x, self.position.y);
-
-            enemy.time_since_last_attack += delta;
-            if enemy_rec.check_collision_circle_rec(player_point, (self.texture.width / 2) as f32) {
-                if enemy.time_since_last_attack >= enemy.attack_speed {
-                    self.health -= enemy.damage;
-                    enemy.time_since_last_attack = 0.0
-                }
-            }
-        }
     }
 
     pub fn is_alive(&self) -> bool {

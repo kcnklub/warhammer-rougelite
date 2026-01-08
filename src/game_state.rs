@@ -42,7 +42,10 @@ impl<'a> GameState<'a> {
         self.elapsed_time += delta;
         self.player.handle_user_input(self.rl, &delta);
         self.player.handle_status_effects(&delta);
-        self.player.handle_enemies(&mut self.enemies, &delta);
+
+        // Move enemy tick BEFORE handle_enemies so knockback velocity is applied next frame
+        self.enemies.tick(&mut self.player, &delta);
+        self.enemies.spawn_enemies(&delta);
 
         // handle and update projectiles
         // TODO I need to clean up projectiles that are passed the end of the play area!!
@@ -50,8 +53,5 @@ impl<'a> GameState<'a> {
         self.projectiles.append(&mut new_projectiles);
         self.projectiles.move_projectiles(&delta);
         self.projectiles.handle_collision(&mut self.enemies);
-
-        self.enemies.tick(&self.player.position, &delta);
-        self.enemies.spawn_enemies(&delta);
     }
 }
