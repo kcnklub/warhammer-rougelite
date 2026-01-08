@@ -59,6 +59,12 @@ impl<'a> AllEnemies<'a> {
 
 fn handle_movement(player: &Player, enemy: &mut Enemy, delta: &f32) {
     // Semi-implicit Euler integration
+
+    // Update knockback cooldown timer
+    if enemy.knockback_cooldown > 0.0 {
+        enemy.knockback_cooldown -= delta;
+    }
+
     // Step 1: Apply friction to velocity
     let friction = 1.0; // Aggressive friction per frame
     enemy.velocity_x *= friction;
@@ -72,8 +78,8 @@ fn handle_movement(player: &Player, enemy: &mut Enemy, delta: &f32) {
     let distance = (dx * dx + dy * dy).sqrt();
 
     // Step 3: Calculate acceleration and update velocity
-    // (only if distance > 0 to avoid division by zero)
-    if distance > 0.0 {
+    // (only if distance > 0 to avoid division by zero AND not in knockback state)
+    if distance > 0.0 && enemy.knockback_cooldown <= 0.0 {
         let acceleration_x = (dx / distance) * SPEED;
         let acceleration_y = (dy / distance) * SPEED;
 
@@ -129,10 +135,15 @@ fn handle_player_collision<'a>(
         let distance = (dx * dx + dy * dy).sqrt();
 
         if distance > 0.0 {
-            // Apply velocity impulse for knockback (instead of direct position change)
-            let knockback_strength = 800.0; // TODO: Tune this value during gameplay testing
-            enemy.velocity_x += (dx / distance) * knockback_strength;
-            enemy.velocity_y += (dy / distance) * knockback_strength;
+            // Apply velocity impulse for knockback (away from player, not toward)
+            let knockback_strength = 20000.0; // TODO: Tune this value during gameplay testing
+            let knockback_duration = 0.2; // Duration in seconds where enemy can't accelerate toward player
+
+            enemy.velocity_x += (dx / distance) * knockback_strength * delta;
+            enemy.velocity_y += (dy / distance) * knockback_strength * delta;
+
+            // Set knockback cooldown to prevent immediate re-acceleration toward player
+            enemy.knockback_cooldown = knockback_duration;
         }
     }
 }
@@ -151,6 +162,8 @@ pub struct Enemy {
     pub position: Position,
     pub velocity_x: f32,
     pub velocity_y: f32,
+
+    pub knockback_cooldown: f32,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
@@ -176,6 +189,7 @@ impl EnemyType {
             position,
             velocity_x: 0.0,
             velocity_y: 0.0,
+            knockback_cooldown: 0.0,
         }
     }
 
@@ -195,6 +209,7 @@ impl EnemyType {
             position,
             velocity_x: 0.0,
             velocity_y: 0.0,
+            knockback_cooldown: 0.0,
         }
     }
 }
