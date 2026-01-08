@@ -1,5 +1,4 @@
 use crate::{
-    enemy::AllEnemies,
     projectile::{BolterProjectile, Projectile},
     statuses::*,
     weapons::{BolterData, Weapon},
@@ -44,26 +43,39 @@ impl<'a> Player {
         player
     }
 
+    pub fn update_aim_direction(
+        &mut self,
+        rl: &raylib::RaylibHandle,
+        camera: raylib::ffi::Camera2D,
+    ) {
+        let mouse_screen = rl.get_mouse_position();
+        let mouse_world = rl.get_screen_to_world2D(mouse_screen, camera);
+
+        let dx = mouse_world.x - self.position.x;
+        let dy = mouse_world.y - self.position.y;
+
+        // Calculate angle in radians (atan2 returns -PI to PI)
+        let angle = dy.atan2(dx);
+
+        self.position.direction = Direction::Angle(angle);
+    }
+
     pub fn handle_user_input(&mut self, rl: &raylib::RaylibHandle, delta: &f32) {
         let speed_multiplier = self.calculate_speed_multiplier();
         let effective_speed = self.move_speed * speed_multiplier;
 
-        // Handle WASD input
+        // Handle WASD input (movement only, direction is handled by mouse)
         if rl.is_key_down(KeyboardKey::KEY_W) {
             self.position.y -= effective_speed * delta;
-            self.position.direction = Direction::Up;
         }
         if rl.is_key_down(KeyboardKey::KEY_S) {
             self.position.y += effective_speed * delta;
-            self.position.direction = Direction::Down;
         }
         if rl.is_key_down(KeyboardKey::KEY_A) {
             self.position.x -= effective_speed * delta;
-            self.position.direction = Direction::Left;
         }
         if rl.is_key_down(KeyboardKey::KEY_D) {
             self.position.x += effective_speed * delta;
-            self.position.direction = Direction::Right;
         }
     }
 
@@ -147,6 +159,11 @@ impl<'a> Player {
                                 x: self.position.x - offset,
                                 y: self.position.y,
                                 direction: self.position.direction,
+                            },
+                            Direction::Angle(angle) => Position {
+                                x: self.position.x + angle.cos() * offset,
+                                y: self.position.y + angle.sin() * offset,
+                                direction: Direction::Angle(angle),
                             },
                         };
                         res.push(Projectile::Bolter(BolterProjectile::new(position)));

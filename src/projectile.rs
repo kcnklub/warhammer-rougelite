@@ -32,6 +32,10 @@ impl<'a> AllProjectiles<'a> {
                     Direction::Down => bolter_data.position.y += bolter_data.speed * delta,
                     Direction::Left => bolter_data.position.x -= bolter_data.speed * delta,
                     Direction::Right => bolter_data.position.x += bolter_data.speed * delta,
+                    Direction::Angle(angle) => {
+                        bolter_data.position.x += angle.cos() * bolter_data.speed * delta;
+                        bolter_data.position.y += angle.sin() * bolter_data.speed * delta;
+                    }
                 },
             };
         }

@@ -19,6 +19,9 @@ pub fn render_game_state(game_state: &mut GameState, thread: &raylib::RaylibThre
     let fps = game_state.rl.get_fps();
     let _time = game_state.rl.get_time();
 
+    // Get mouse position before borrowing mutably
+    let mouse_screen = game_state.rl.get_mouse_position();
+
     let mut d = game_state.rl.begin_drawing(thread);
 
     d.clear_background(Color::BLACK);
@@ -35,6 +38,7 @@ pub fn render_game_state(game_state: &mut GameState, thread: &raylib::RaylibThre
         rotation: 0.0,
         zoom: 1.0,
     };
+    let mouse_world = d.get_screen_to_world2D(mouse_screen, camera);
 
     // === WORLD SPACE RENDERING (with camera) ===
     {
@@ -49,6 +53,7 @@ pub fn render_game_state(game_state: &mut GameState, thread: &raylib::RaylibThre
         render_player(&mut d2, &game_state.player);
         render_projectiles(&mut d2, &game_state.projectiles);
         render_enemies(&mut d2, &game_state.enemies);
+        render_crosshair(&mut d2, mouse_world);
     }
 
     // === SCREEN SPACE UI (after camera - draws on top) ===
@@ -73,6 +78,16 @@ fn render_player(d: &mut RaylibMode2D<RaylibDrawHandle>, player: &Player) {
         Direction::Down => player.texture.width as f32,
         Direction::Left => -1.0 * player.texture.width as f32,
         Direction::Right => player.texture.width as f32,
+        Direction::Angle(angle) => {
+            // Flip sprite horizontally if facing left (angle between 90 and 270 degrees)
+            // angle: 0 = right, PI/2 = down, PI = left, -PI/2 = up
+            let radians = angle;
+            if radians > std::f32::consts::FRAC_PI_2 || radians < -std::f32::consts::FRAC_PI_2 {
+                -1.0 * player.texture.width as f32
+            } else {
+                player.texture.width as f32
+            }
+        }
     };
     let source_rec = Rectangle::new(0.0, 0.0, source_width, player.texture.height as f32);
     let dest_rec = Rectangle::new(
@@ -85,12 +100,7 @@ fn render_player(d: &mut RaylibMode2D<RaylibDrawHandle>, player: &Player) {
         player.texture.width as f32 / (PLAYER_SCALE * 2.0),
         player.texture.height as f32 / (PLAYER_SCALE * 2.0),
     );
-    let rotation = match player.position.direction {
-        Direction::Up => 0.0,
-        Direction::Down => 0.0,
-        Direction::Left => 0.0,
-        Direction::Right => 0.0,
-    };
+    let rotation = 0.0; // No rotation, just flipping
     if game_state::DEBUG_MODE {
         d.draw_circle_lines(
             player.position.x as i32,
@@ -167,6 +177,7 @@ pub fn render_enemies(d: &mut RaylibMode2D<RaylibDrawHandle>, enemies: &AllEnemi
             Direction::Down => texture.width as f32,
             Direction::Left => texture.width as f32,
             Direction::Right => -1.0 * texture.width as f32,
+            Direction::Angle(_) => texture.width as f32, // Enemies use cardinal directions, not angles
         };
 
         let source_rec = Rectangle::new(0.0, 0.0, source_width, texture.height as f32);
@@ -218,6 +229,7 @@ fn render_projectiles(d: &mut RaylibMode2D<RaylibDrawHandle>, projectiles: &AllP
                     Direction::Down => 90.0,
                     Direction::Left => 180.0,
                     Direction::Right => 0.0,
+                    Direction::Angle(angle) => angle.to_degrees(),
                 };
                 d.draw_texture_pro(
                     &projectiles.texture,
@@ -241,4 +253,44 @@ fn render_projectiles(d: &mut RaylibMode2D<RaylibDrawHandle>, projectiles: &AllP
             }
         }
     }
+}
+
+fn render_crosshair(d: &mut RaylibMode2D<RaylibDrawHandle>, mouse_world: Vector2) {
+    let crosshair_size = 10.0;
+    let thickness = 2.0;
+    let gap = 2.0;
+
+    // Draw four rectangles forming a crosshair with a gap in the center
+    // Top bar
+    d.draw_rectangle(
+        (mouse_world.x - thickness / 2.0) as i32,
+        (mouse_world.y - crosshair_size) as i32,
+        thickness as i32,
+        (crosshair_size - gap) as i32,
+        Color::WHITE,
+    );
+    // Bottom bar
+    d.draw_rectangle(
+        (mouse_world.x - thickness / 2.0) as i32,
+        (mouse_world.y + gap) as i32,
+        thickness as i32,
+        (crosshair_size - gap) as i32,
+        Color::WHITE,
+    );
+    // Left bar
+    d.draw_rectangle(
+        (mouse_world.x - crosshair_size) as i32,
+        (mouse_world.y - thickness / 2.0) as i32,
+        (crosshair_size - gap) as i32,
+        thickness as i32,
+        Color::WHITE,
+    );
+    // Right bar
+    d.draw_rectangle(
+        (mouse_world.x + gap) as i32,
+        (mouse_world.y - thickness / 2.0) as i32,
+        (crosshair_size - gap) as i32,
+        thickness as i32,
+        Color::WHITE,
+    );
 }
