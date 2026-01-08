@@ -14,6 +14,8 @@ fn main() {
         .title("Move Block with WASD")
         .build();
 
+    rl.hide_cursor();
+
     // TODO split game integration loop from FPS so I don't need this.
     //rl.set_target_fps(144);
 

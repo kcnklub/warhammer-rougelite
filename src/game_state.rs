@@ -4,7 +4,7 @@ use crate::{
     enemy::AllEnemies, player::Player, projectile::AllProjectiles, renderer::background::Background,
 };
 
-pub const DEBUG_MODE: bool = true;
+pub const DEBUG_MODE: bool = false;
 
 pub struct GameState<'a> {
     pub rl: &'a mut raylib::RaylibHandle,
@@ -38,8 +38,30 @@ impl<'a> GameState<'a> {
         self.player.is_alive()
     }
 
+    pub fn get_camera(&self, screen_width: i32, screen_height: i32) -> raylib::ffi::Camera2D {
+        raylib::ffi::Camera2D {
+            target: raylib::ffi::Vector2 {
+                x: self.player.position.x,
+                y: self.player.position.y,
+            },
+            offset: raylib::ffi::Vector2 {
+                x: (screen_width / 2) as f32,
+                y: (screen_height / 2) as f32,
+            },
+            rotation: 0.0,
+            zoom: 1.0,
+        }
+    }
+
     pub fn game_tick(&mut self, delta: &f32) {
         self.elapsed_time += delta;
+
+        // Update player aim direction based on mouse BEFORE processing input
+        let screen_width = self.rl.get_screen_width();
+        let screen_height = self.rl.get_screen_height();
+        let camera = self.get_camera(screen_width, screen_height);
+        self.player.update_aim_direction(self.rl, camera);
+
         self.player.handle_user_input(self.rl, &delta);
         self.player.handle_status_effects(&delta);
 
