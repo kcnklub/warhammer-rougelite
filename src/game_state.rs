@@ -67,7 +67,7 @@ impl<'a> GameState<'a> {
 
         // Move enemy tick BEFORE handle_enemies so knockback velocity is applied next frame
         self.enemies.tick(&mut self.player, &delta);
-        self.enemies.spawn_enemies(&delta);
+        self.enemies.spawn_enemies(&delta, &self.player.position, self.elapsed_time);
 
         // handle and update projectiles
         // TODO I need to clean up projectiles that are passed the end of the play area!!

@@ -10,10 +10,77 @@ use crate::{
 
 const SPEED: f32 = 2000.0;
 
+// Spawn rate scaling constants
+const BASE_SPAWN_RATE: f32 = 3.0;       // Starting spawn interval (seconds)
+const MIN_SPAWN_RATE: f32 = 0.3;        // Minimum spawn interval (floor)
+const SPAWN_SCALING_FACTOR: f32 = 60.0; // How quickly difficulty ramps up
+
+// Viewport and spawn positioning
+const SCREEN_HALF_WIDTH: f32 = 1240.0;  // 2480 / 2
+const SCREEN_HALF_HEIGHT: f32 = 720.0;  // 1440 / 2
+const SPAWN_BUFFER: f32 = 100.0;        // Pixels outside viewport to spawn
+
+#[derive(Clone, Copy)]
+enum SpawnEdge {
+    Top,
+    Bottom,
+    Left,
+    Right,
+}
+
+impl SpawnEdge {
+    fn random(rng: &mut impl Rng) -> Self {
+        match rng.random_range(0..4) {
+            0 => SpawnEdge::Top,
+            1 => SpawnEdge::Bottom,
+            2 => SpawnEdge::Left,
+            _ => SpawnEdge::Right,
+        }
+    }
+}
+
+fn calculate_spawn_position(player_pos: &Position, rng: &mut impl Rng) -> Position {
+    let edge = SpawnEdge::random(rng);
+
+    // Calculate viewport bounds in world space
+    let view_left = player_pos.x - SCREEN_HALF_WIDTH;
+    let view_right = player_pos.x + SCREEN_HALF_WIDTH;
+    let view_top = player_pos.y - SCREEN_HALF_HEIGHT;
+    let view_bottom = player_pos.y + SCREEN_HALF_HEIGHT;
+
+    let (x, y) = match edge {
+        SpawnEdge::Top => {
+            let x = rng.random_range(view_left..view_right);
+            let y = view_top - SPAWN_BUFFER;
+            (x, y)
+        }
+        SpawnEdge::Bottom => {
+            let x = rng.random_range(view_left..view_right);
+            let y = view_bottom + SPAWN_BUFFER;
+            (x, y)
+        }
+        SpawnEdge::Left => {
+            let x = view_left - SPAWN_BUFFER;
+            let y = rng.random_range(view_top..view_bottom);
+            (x, y)
+        }
+        SpawnEdge::Right => {
+            let x = view_right + SPAWN_BUFFER;
+            let y = rng.random_range(view_top..view_bottom);
+            (x, y)
+        }
+    };
+
+    Position {
+        x,
+        y,
+        direction: Direction::Down,
+    }
+}
+
 pub struct AllEnemies<'a> {
     pub enemies: Vec<Enemy>,
     time_since_spawn: f32,
-    spawn_rate: f32,
     pub texture_map: HashMap<EnemyType, &'a Texture2D>,
 }
 
@@ -25,7 +92,6 @@ impl<'a> AllEnemies<'a> {
         Self {
             enemies: vec![],
             time_since_spawn: 0.0,
-            spawn_rate: 3.0,
             texture_map,
         }
     }
@@ -40,17 +106,21 @@ impl<'a> AllEnemies<'a> {
         }
     }
 
-    pub fn spawn_enemies(&mut self, delta: &f32) {
+    fn calculate_spawn_interval(&self, elapsed_time: f32) -> f32 {
+        let dynamic_rate = BASE_SPAWN_RATE / (1.0 + elapsed_time / SPAWN_SCALING_FACTOR);
+        dynamic_rate.max(MIN_SPAWN_RATE)
+    }
+
+    pub fn spawn_enemies(&mut self, delta: &f32, player_pos: &Position, elapsed_time: f32) {
         self.time_since_spawn += delta;
-        let mut rng = rand::rng();
-        let x: i32 = rng.random_range(1..2480);
-        let y: i32 = rng.random_range(1..200);
-        if self.time_since_spawn >= self.spawn_rate {
-            let spawned_enemy = EnemyType::new_servo_skull(Position {
-                x: x as f32,
-                y: y as f32,
-                direction: Direction::Down,
-            });
+
+        let current_spawn_interval = self.calculate_spawn_interval(elapsed_time);
+
+        if self.time_since_spawn >= current_spawn_interval {
+            let mut rng = rand::rng();
+            let spawn_position = calculate_spawn_position(player_pos, &mut rng);
+
+            let spawned_enemy = EnemyType::new_servo_skull(spawn_position);
             self.enemies.push(spawned_enemy);
             self.time_since_spawn = 0.0;
         }
