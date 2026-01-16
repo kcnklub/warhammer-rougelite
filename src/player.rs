@@ -1,7 +1,7 @@
 use crate::{
     projectile::{BolterProjectile, Projectile},
     statuses::*,
-    weapons::{BolterData, Weapon},
+    weapons::{Weapon, WeaponData},
 };
 
 use crate::utils::{Direction, Position};
@@ -34,7 +34,13 @@ impl<'a> Player {
             texture: texture,
         };
 
-        player.add_weapon(Weapon::Bolter(BolterData {
+        player.add_weapon(Weapon::Bolter(WeaponData {
+            damage: 1.0,
+            tick_interval: 0.5,
+            time_since_last_tick: 0.0,
+        }));
+
+        player.add_weapon(Weapon::PowerSword(WeaponData {
             damage: 1.0,
             tick_interval: 0.5,
             time_since_last_tick: 0.0,
@@ -170,6 +176,7 @@ impl<'a> Player {
                         data.time_since_last_tick = 0.0;
                     }
                 }
+                Weapon::PowerSword(data) => {}
             }
         }
         res
