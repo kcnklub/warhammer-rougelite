@@ -16,7 +16,7 @@ pub struct Player {
 
     // game mechanic data
     pub statuses: Vec<Status>,
-    pub weapons: Vec<Weapon>,
+    pub weapons: [Option<Weapon>; 3],
 
     // Rendering bits
     pub texture: Texture2D,
@@ -24,29 +24,27 @@ pub struct Player {
 
 impl<'a> Player {
     pub fn new(position: Position, texture: Texture2D) -> Self {
-        let mut player = Player {
+        Player {
             position,
             move_speed: 300.0,
             health: 100,
             max_health: 100,
             statuses: vec![],
-            weapons: vec![],
+            weapons: [
+                Some(Weapon::Bolter(WeaponData {
+                    damage: 1.0,
+                    tick_interval: 0.5,
+                    time_since_last_tick: 0.0,
+                })),
+                Some(Weapon::PowerSword(WeaponData {
+                    damage: 1.0,
+                    tick_interval: 0.5,
+                    time_since_last_tick: 0.0,
+                })),
+                None,
+            ],
             texture: texture,
-        };
-
-        player.add_weapon(Weapon::Bolter(WeaponData {
-            damage: 1.0,
-            tick_interval: 0.5,
-            time_since_last_tick: 0.0,
-        }));
-
-        player.add_weapon(Weapon::PowerSword(WeaponData {
-            damage: 1.0,
-            tick_interval: 0.5,
-            time_since_last_tick: 0.0,
-        }));
-
-        player
+        }
     }
 
     pub fn update_aim_direction(
@@ -137,7 +135,8 @@ impl<'a> Player {
 
     pub fn handle_weapons(&mut self, delta: &f32) -> Vec<Projectile> {
         let mut res = vec![];
-        for weapon in self.weapons.iter_mut() {
+        for slot in self.weapons.iter_mut() {
+            let Some(weapon) = slot else { continue };
             match weapon {
                 Weapon::Bolter(data) => {
                     data.time_since_last_tick += delta;
@@ -176,7 +175,7 @@ impl<'a> Player {
                         data.time_since_last_tick = 0.0;
                     }
                 }
-                Weapon::PowerSword(data) => {}
+                Weapon::PowerSword(_) => {}
             }
         }
         res
@@ -221,12 +220,12 @@ impl<'a> Player {
             .collect()
     }
 
-    pub fn add_weapon(&mut self, weapon: Weapon) {
-        // Remove existing status of the same type (single instance rule)
-        self.weapons
-            .retain(|s| !matches!((s, &weapon), (Weapon::Bolter(_), Weapon::Bolter(_))));
-
-        self.weapons.push(weapon);
+    pub fn get_weapon_slots(&self) -> [Option<&str>; 3] {
+        [
+            self.weapons[0].as_ref().map(|w| w.get_display_name()),
+            self.weapons[1].as_ref().map(|w| w.get_display_name()),
+            self.weapons[2].as_ref().map(|w| w.get_display_name()),
+        ]
     }
 
     pub fn is_alive(&self) -> bool {

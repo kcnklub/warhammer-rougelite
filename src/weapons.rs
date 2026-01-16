@@ -4,6 +4,15 @@ pub enum Weapon {
     PowerSword(WeaponData),
 }
 
+impl Weapon {
+    pub fn get_display_name(&self) -> &str {
+        match self {
+            Weapon::Bolter(_) => "Bolter",
+            Weapon::PowerSword(_) => "Power Sword",
+        }
+    }
+}
+
 #[derive(Clone, Copy)]
 pub struct WeaponData {
     pub damage: f32,

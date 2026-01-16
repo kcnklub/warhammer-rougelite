@@ -70,6 +70,7 @@ pub fn render_game_state(game_state: &mut GameState, thread: &raylib::RaylibThre
     d.draw_text(&time_text, clock_x, 10, 20, Color::WHITE);
 
     render_player_ui(&mut d, &game_state.player);
+    render_weapon_slots(&mut d, &game_state.player);
 }
 
 fn render_player(d: &mut RaylibMode2D<RaylibDrawHandle>, player: &Player) {
@@ -163,6 +164,31 @@ fn render_player_ui(d: &mut RaylibDrawHandle, player: &Player) {
             status_color,
         );
         y_offset += 20;
+    }
+}
+
+fn render_weapon_slots(d: &mut RaylibDrawHandle, player: &Player) {
+    let screen_height = d.get_screen_height();
+    let slot_size = 160;
+    let slot_gap = 5;
+    let margin = 10;
+
+    let base_y = screen_height - slot_size - margin;
+    let weapon_slots = player.get_weapon_slots();
+
+    for (i, slot) in weapon_slots.iter().enumerate() {
+        let x = margin + (i as i32) * (slot_size + slot_gap);
+        let y = base_y;
+
+        // Draw slot box outline
+        d.draw_rectangle_lines(x, y, slot_size, slot_size, Color::WHITE);
+
+        // Draw weapon name or "Empty"
+        let text = slot.unwrap_or("Empty");
+        let font_size = 12;
+        let text_x = x + 5;
+        let text_y = y + (slot_size - font_size) / 2;
+        d.draw_text(text, text_x, text_y, font_size, Color::WHITE);
     }
 }
 
