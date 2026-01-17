@@ -1,5 +1,5 @@
 use crate::{
-    projectile::{BolterProjectile, Projectile},
+    projectile::{BolterProjectile, PowerSwordProjectile, Projectile},
     statuses::*,
     weapons::{Weapon, WeaponData},
 };
@@ -175,7 +175,28 @@ impl<'a> Player {
                         data.time_since_last_tick = 0.0;
                     }
                 }
-                Weapon::PowerSword(_) => {}
+                Weapon::PowerSword(data) => {
+                    data.time_since_last_tick += delta;
+                    let offset = (self.texture.width / 2) as f32;
+
+                    if data.time_since_last_tick >= data.tick_interval {
+                        if let Direction::Angle(angle) = self.position.direction {
+                            let x;
+                            if angle > 0.0 && angle <= 180.0 {
+                                x = self.position.x - offset;
+                            } else {
+                                x = self.position.x + offset;
+                            }
+                            let position = Position {
+                                x,
+                                y: self.position.y,
+                                direction: self.position.direction,
+                            };
+                            res.push(Projectile::PowerSword(PowerSwordProjectile::new(position)));
+                            data.time_since_last_tick = 0.0;
+                        }
+                    }
+                }
             }
         }
         res

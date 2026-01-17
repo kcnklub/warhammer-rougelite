@@ -277,6 +277,39 @@ fn render_projectiles(d: &mut RaylibMode2D<RaylibDrawHandle>, projectiles: &AllP
                     }
                 }
             }
+            Projectile::PowerSword(sword_data) => {
+                let rect = sword_data.get_collision_rect();
+                let slash_offset = sword_data.get_slash_offset();
+                let rotation = 0.0;
+
+                let (offset_x, offset_y) = match sword_data.position.direction {
+                    Direction::Up => (slash_offset, 0.0),
+                    Direction::Down => (-slash_offset, 0.0),
+                    Direction::Left => (0.0, -slash_offset),
+                    Direction::Right => (0.0, slash_offset),
+                    Direction::Angle(angle) => {
+                        let perp_angle = angle + std::f32::consts::FRAC_PI_2;
+                        (
+                            perp_angle.cos() * slash_offset,
+                            perp_angle.sin() * slash_offset,
+                        )
+                    }
+                };
+
+                let origin = Vector2::new(0.0, sword_data.height / 2.0);
+                let dest_rec = Rectangle::new(
+                    sword_data.position.x + offset_x,
+                    sword_data.position.y + offset_y,
+                    sword_data.width,
+                    sword_data.height,
+                );
+
+                d.draw_rectangle_pro(dest_rec, origin, rotation, Color::BLUE);
+
+                if game_state::DEBUG_MODE {
+                    d.draw_rectangle_lines_ex(rect, 2.0, Color::RED);
+                }
+            }
         }
     }
 }

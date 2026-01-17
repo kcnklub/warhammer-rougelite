@@ -4,7 +4,7 @@ use crate::{
     enemy::AllEnemies, player::Player, projectile::AllProjectiles, renderer::background::Background,
 };
 
-pub const DEBUG_MODE: bool = false;
+pub const DEBUG_MODE: bool = true;
 
 pub struct GameState<'a> {
     pub rl: &'a mut raylib::RaylibHandle,
@@ -67,7 +67,8 @@ impl<'a> GameState<'a> {
 
         // Move enemy tick BEFORE handle_enemies so knockback velocity is applied next frame
         self.enemies.tick(&mut self.player, &delta);
-        self.enemies.spawn_enemies(&delta, &self.player.position, self.elapsed_time);
+        self.enemies
+            .spawn_enemies(&delta, &self.player.position, self.elapsed_time);
 
         // handle and update projectiles
         // TODO I need to clean up projectiles that are passed the end of the play area!!
