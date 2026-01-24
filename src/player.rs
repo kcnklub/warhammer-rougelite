@@ -1,5 +1,8 @@
 use crate::{
-    projectiles::{Projectile, bolter::BolterProjectile, power_sword::PowerSwordProjectile},
+    projectiles::{
+        bolter::BolterProjectile, power_sword::PowerSwordProjectile, shotgun::ShotgunProjectile,
+        Projectile,
+    },
     statuses::*,
     weapons::{Weapon, WeaponData},
 };
@@ -7,6 +10,7 @@ use crate::{
 use crate::utils::{Direction, Position};
 use raylib::ffi::KeyboardKey;
 use raylib::prelude::*;
+use std::f32::consts::PI;
 
 // Scale factor for player sprite rendering (higher value = smaller sprite)
 pub const PLAYER_SCALE: f32 = 1.5;
@@ -65,9 +69,9 @@ impl<'a> Player {
             max_health: 100,
             statuses: vec![],
             weapons: [
-                Some(Weapon::PowerSword(WeaponData {
+                Some(Weapon::Shotgun(WeaponData {
                     damage: 1.0,
-                    tick_interval: 0.5,
+                    tick_interval: 0.9,
                     time_since_last_tick: 0.0,
                 })),
                 None,
@@ -210,6 +214,37 @@ impl<'a> Player {
                             position,
                             self.moving_direction,
                         )));
+                        data.time_since_last_tick = 0.0;
+                    }
+                }
+                Weapon::Shotgun(data) => {
+                    data.time_since_last_tick += delta;
+                    let offset = (self.texture.width / 2) as f32;
+
+                    if data.time_since_last_tick >= data.tick_interval {
+                        let base_angle = match self.moving_direction {
+                            Direction::Up => -PI / 2.0,
+                            Direction::Down => PI / 2.0,
+                            Direction::Left => PI,
+                            Direction::Right => 0.0,
+                        };
+                        let spread = 10.0_f32.to_radians();
+                        let angles = [
+                            base_angle,
+                            base_angle - spread,
+                            base_angle + spread,
+                            base_angle - (spread * 2.0),
+                            base_angle + (spread * 2.0),
+                        ];
+
+                        for angle in angles {
+                            let position = Position {
+                                x: self.position.x + angle.cos() * offset,
+                                y: self.position.y + angle.sin() * offset,
+                            };
+                            res.push(Projectile::Shotgun(ShotgunProjectile::new(position, angle)));
+                        }
+
                         data.time_since_last_tick = 0.0;
                     }
                 }

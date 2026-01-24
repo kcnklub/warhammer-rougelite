@@ -6,6 +6,7 @@ use crate::{enemy::AllEnemies, player::Player};
 
 pub mod bolter;
 pub mod power_sword;
+pub mod shotgun;
 
 const SCREEN_HALF_WIDTH: f32 = 1240.0;
 const SCREEN_HALF_HEIGHT: f32 = 720.0;
@@ -15,6 +16,7 @@ const CULL_BUFFER: f32 = 200.0; // Extra margin before removing
 pub enum Projectile {
     Bolter(bolter::BolterProjectile),
     PowerSword(power_sword::PowerSwordProjectile),
+    Shotgun(shotgun::ShotgunProjectile),
 }
 
 pub struct AllProjectiles<'a> {
@@ -39,6 +41,7 @@ impl<'a> AllProjectiles<'a> {
             match projectile {
                 Projectile::Bolter(bolter_data) => bolter_data.handle_move(delta),
                 Projectile::PowerSword(sword_data) => sword_data.handle_move(player, delta),
+                Projectile::Shotgun(shotgun_data) => shotgun_data.handle_move(delta),
             };
         }
 
@@ -52,6 +55,7 @@ impl<'a> AllProjectiles<'a> {
             let pos = match projectile {
                 Projectile::Bolter(b) => &b.position,
                 Projectile::PowerSword(s) => &s.position,
+                Projectile::Shotgun(s) => &s.position,
             };
             pos.x >= cull_left && pos.x <= cull_right && pos.y >= cull_top && pos.y <= cull_bottom
         });
@@ -64,12 +68,14 @@ impl<'a> AllProjectiles<'a> {
                     bolter_data.handle_collision(all_enemies, self.texture)
                 }
                 Projectile::PowerSword(sword_data) => sword_data.handle_collision(all_enemies),
+                Projectile::Shotgun(shotgun_data) => shotgun_data.handle_collision(all_enemies),
             };
         }
 
         self.projectiles.retain(|&projectile| match projectile {
             Projectile::Bolter(bolter_projectile) => bolter_projectile.hits == 0,
             Projectile::PowerSword(sword_projectile) => sword_projectile.lifetime > 0.0,
+            Projectile::Shotgun(shotgun_projectile) => shotgun_projectile.hits == 0,
         });
     }
 }

@@ -2,6 +2,7 @@
 pub enum Weapon {
     Bolter(WeaponData),
     PowerSword(WeaponData),
+    Shotgun(WeaponData),
 }
 
 impl Weapon {
@@ -9,6 +10,7 @@ impl Weapon {
         match self {
             Weapon::Bolter(_) => "Bolter",
             Weapon::PowerSword(_) => "Power Sword",
+            Weapon::Shotgun(_) => "Shotgun",
         }
     }
 }
