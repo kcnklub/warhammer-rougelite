@@ -8,6 +8,9 @@ use crate::utils::{Direction, Position};
 use raylib::ffi::KeyboardKey;
 use raylib::prelude::*;
 
+// Scale factor for player sprite rendering (higher value = smaller sprite)
+pub const PLAYER_SCALE: f32 = 1.5;
+
 pub struct MouseInformation(f32);
 
 impl MouseInformation {
@@ -44,10 +47,14 @@ pub struct Player {
 
     // Rendering bits
     pub texture: Texture2D,
+    pub collision_radius: f32,
 }
 
 impl<'a> Player {
     pub fn new(position: Position, texture: Texture2D) -> Self {
+        // Calculate collision radius based on scaled sprite size
+        let collision_radius = (texture.width as f32 / PLAYER_SCALE) / 2.0;
+
         Player {
             position,
             aiming_direction: Direction::Right,
@@ -66,7 +73,8 @@ impl<'a> Player {
                 None,
                 None,
             ],
-            texture: texture,
+            texture,
+            collision_radius,
         }
     }
 

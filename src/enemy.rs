@@ -184,24 +184,28 @@ fn handle_player_collision<'a>(
     let texture = texture_map
         .get(&enemy.enemy_type)
         .expect("unable to find texture");
+
+    // Center the collision rectangle on enemy.position to match visual rendering
+    // (renderer uses origin offset to center sprite on position)
+    let half_width = texture.width as f32 / 2.0;
+    let half_height = texture.height as f32 / 2.0;
     let enemy_rec = Rectangle::new(
-        enemy.position.x,
-        enemy.position.y,
+        enemy.position.x - half_width,
+        enemy.position.y - half_height,
         texture.width as f32,
         texture.height as f32,
     );
     let player_point = Vector2::new(player.position.x, player.position.y);
 
     enemy.time_since_last_attack += delta;
-    if enemy_rec.check_collision_circle_rec(player_point, (player.texture.width / 2) as f32) {
+    if enemy_rec.check_collision_circle_rec(player_point, player.collision_radius) {
         if enemy.time_since_last_attack >= enemy.attack_speed {
             player.health -= enemy.damage;
             enemy.time_since_last_attack = 0.0;
         }
-        let enemy_center_x = enemy.position.x + (texture.width as f32 / 2.0);
-        let enemy_center_y = enemy.position.y + (texture.height as f32 / 2.0);
-        let dx = enemy_center_x - player.position.x;
-        let dy = enemy_center_y - player.position.y;
+        // enemy.position IS the center (matches rendering origin)
+        let dx = enemy.position.x - player.position.x;
+        let dy = enemy.position.y - player.position.y;
         let distance = (dx * dx + dy * dy).sqrt();
 
         if distance > 0.0 {
@@ -301,19 +305,14 @@ mod tests {
             };
             Texture2D::from_raw(raw_texture)
         };
-        Player {
-            position: Position {
+        Player::new(
+            Position {
                 x,
                 y,
                 direction: Direction::Down,
             },
-            move_speed: 300.0,
-            health: 100,
-            max_health: 100,
-            statuses: vec![],
-            weapons: vec![],
             texture,
-        }
+        )
     }
 
     #[test]
@@ -483,6 +482,107 @@ mod tests {
             "Friction should reduce velocity_x from {} to {}",
             initial_vx,
             enemy.velocity_x
+        );
+    }
+
+    // Helper to create a collision rectangle centered on a position (matches rendering)
+    fn create_centered_enemy_rect(pos_x: f32, pos_y: f32, width: f32, height: f32) -> Rectangle {
+        Rectangle::new(
+            pos_x - width / 2.0,
+            pos_y - height / 2.0,
+            width,
+            height,
+        )
+    }
+
+    #[test]
+    fn test_enemy_collision_rectangle_centered() {
+        // Create an enemy at position (100, 100) with a 64x64 texture
+        let enemy_pos_x = 100.0;
+        let enemy_pos_y = 100.0;
+        let texture_width = 64.0;
+        let texture_height = 64.0;
+
+        let rect = create_centered_enemy_rect(enemy_pos_x, enemy_pos_y, texture_width, texture_height);
+
+        // The collision rectangle should be centered on enemy position
+        // For a 64x64 texture at (100, 100):
+        // - Top-left should be at (100 - 32, 100 - 32) = (68, 68)
+        // - Bottom-right should be at (68 + 64, 68 + 64) = (132, 132)
+        assert_eq!(rect.x, 68.0, "Rectangle X should be position - half_width");
+        assert_eq!(rect.y, 68.0, "Rectangle Y should be position - half_height");
+        assert_eq!(rect.width, 64.0, "Rectangle width should match texture");
+        assert_eq!(rect.height, 64.0, "Rectangle height should match texture");
+
+        // Verify the center of the rectangle is at the enemy position
+        let rect_center_x = rect.x + rect.width / 2.0;
+        let rect_center_y = rect.y + rect.height / 2.0;
+        assert_eq!(rect_center_x, enemy_pos_x, "Rectangle center X should match enemy position");
+        assert_eq!(rect_center_y, enemy_pos_y, "Rectangle center Y should match enemy position");
+    }
+
+    #[test]
+    fn test_player_enemy_collision_at_boundary() {
+        // Player at origin with known collision radius
+        let player = create_test_player(0.0, 0.0);
+        let player_radius = player.collision_radius;
+
+        // Enemy texture size (simulated)
+        let enemy_half_width = 32.0; // 64x64 texture
+
+        // Place enemy so its left edge just touches player's collision circle
+        // Enemy center should be at: player_radius + enemy_half_width
+        let boundary_distance = player_radius + enemy_half_width;
+
+        let enemy_rect = create_centered_enemy_rect(boundary_distance, 0.0, 64.0, 64.0);
+        let player_point = Vector2::new(0.0, 0.0);
+
+        // At exactly the boundary, collision should occur (edges touching)
+        let collides_at_boundary = enemy_rect.check_collision_circle_rec(player_point, player_radius);
+        assert!(
+            collides_at_boundary,
+            "Collision should occur when enemy edge touches player circle (distance={})",
+            boundary_distance
+        );
+
+        // One pixel inside boundary should definitely collide
+        let enemy_rect_inside = create_centered_enemy_rect(boundary_distance - 1.0, 0.0, 64.0, 64.0);
+        let collides_inside = enemy_rect_inside.check_collision_circle_rec(player_point, player_radius);
+        assert!(
+            collides_inside,
+            "Collision should occur when enemy is inside boundary"
+        );
+    }
+
+    #[test]
+    fn test_no_collision_when_not_touching() {
+        // Player at origin
+        let player = create_test_player(0.0, 0.0);
+        let player_radius = player.collision_radius;
+
+        // Enemy texture size (simulated)
+        let enemy_half_width = 32.0; // 64x64 texture
+
+        // Place enemy well outside collision range
+        // Gap of 10 pixels between player circle and enemy rectangle
+        let safe_distance = player_radius + enemy_half_width + 10.0;
+
+        let enemy_rect = create_centered_enemy_rect(safe_distance, 0.0, 64.0, 64.0);
+        let player_point = Vector2::new(0.0, 0.0);
+
+        let collides = enemy_rect.check_collision_circle_rec(player_point, player_radius);
+        assert!(
+            !collides,
+            "No collision should occur when enemy is {} pixels away (gap of 10px)",
+            safe_distance
+        );
+
+        // Test diagonal case - enemy far away diagonally
+        let enemy_rect_diagonal = create_centered_enemy_rect(safe_distance, safe_distance, 64.0, 64.0);
+        let collides_diagonal = enemy_rect_diagonal.check_collision_circle_rec(player_point, player_radius);
+        assert!(
+            !collides_diagonal,
+            "No collision should occur when enemy is diagonally away"
         );
     }
 }

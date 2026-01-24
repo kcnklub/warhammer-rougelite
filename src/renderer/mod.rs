@@ -1,7 +1,7 @@
 use crate::{
     enemy::AllEnemies,
     game_state::{self, GameState},
-    player::Player,
+    player::{Player, PLAYER_SCALE},
     projectile::AllProjectiles,
     utils::Direction,
 };
@@ -10,10 +10,6 @@ use raylib::{color::Color, prelude::*};
 use crate::projectile::Projectile;
 
 pub mod background;
-
-// higher the smaller
-// TODO fix the reverse scaling as it is just odd
-const PLAYER_SCALE: f32 = 1.5;
 
 pub fn render_game_state(game_state: &mut GameState, thread: &raylib::RaylibThread) {
     let fps = game_state.rl.get_fps();
@@ -105,7 +101,7 @@ fn render_player(d: &mut RaylibMode2D<RaylibDrawHandle>, player: &Player) {
         d.draw_circle_lines(
             player.position.x as i32,
             player.position.y as i32,
-            (player.texture.width / (PLAYER_SCALE * 2.0) as i32) as f32,
+            player.collision_radius,
             Color::RED,
         );
     }
