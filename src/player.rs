@@ -1,5 +1,5 @@
 use crate::{
-    projectiles::{BolterProjectile, PowerSwordProjectile, Projectile},
+    projectiles::{Projectile, bolter::BolterProjectile, power_sword::PowerSwordProjectile},
     statuses::*,
     weapons::{Weapon, WeaponData},
 };
