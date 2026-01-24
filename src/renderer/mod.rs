@@ -1,7 +1,7 @@
 use crate::{
     enemy::AllEnemies,
     game_state::{self, GameState},
-    player::{PLAYER_SCALE, Player},
+    player::{Player, PLAYER_SCALE},
     projectiles::AllProjectiles,
     utils::Direction,
 };
@@ -361,6 +361,69 @@ fn render_projectiles(d: &mut RaylibMode2D<RaylibDrawHandle>, projectiles: &AllP
                         sword_data.position.y + offset_y - origin.y,
                         sword_data.width,
                         sword_data.height,
+                    );
+                    d.draw_rectangle_lines_ex(debug_rect, 2.0, Color::RED);
+                }
+            }
+            Projectile::Shotgun(shotgun_data) => {
+                let rotation = shotgun_data.angle.to_degrees();
+                let origin = Vector2::new(shotgun_data.width / 2.0, shotgun_data.height / 2.0);
+                let dest_rec = Rectangle::new(
+                    shotgun_data.position.x,
+                    shotgun_data.position.y,
+                    shotgun_data.width,
+                    shotgun_data.height,
+                );
+
+                let tail_start = Vector2::new(shotgun_data.position.x, shotgun_data.position.y);
+                let tail_offset = Vector2::new(
+                    shotgun_data.angle.cos() * shotgun_data.tail_length,
+                    shotgun_data.angle.sin() * shotgun_data.tail_length,
+                );
+
+                let tail_color_primary = Color::new(255, 235, 0, 140);
+                let tail_color_mid = Color::new(255, 235, 0, 80);
+                let tail_color_end = Color::new(255, 235, 0, 40);
+
+                d.draw_line_ex(
+                    tail_start,
+                    Vector2::new(
+                        tail_start.x - tail_offset.x * 0.6,
+                        tail_start.y - tail_offset.y * 0.6,
+                    ),
+                    2.0,
+                    tail_color_primary,
+                );
+                d.draw_line_ex(
+                    Vector2::new(
+                        tail_start.x - tail_offset.x * 0.4,
+                        tail_start.y - tail_offset.y * 0.4,
+                    ),
+                    Vector2::new(
+                        tail_start.x - tail_offset.x * 0.85,
+                        tail_start.y - tail_offset.y * 0.85,
+                    ),
+                    1.6,
+                    tail_color_mid,
+                );
+                d.draw_line_ex(
+                    Vector2::new(
+                        tail_start.x - tail_offset.x * 0.7,
+                        tail_start.y - tail_offset.y * 0.7,
+                    ),
+                    Vector2::new(tail_start.x - tail_offset.x, tail_start.y - tail_offset.y),
+                    1.2,
+                    tail_color_end,
+                );
+
+                d.draw_rectangle_pro(dest_rec, origin, rotation, Color::new(255, 255, 40, 255));
+
+                if game_state::DEBUG_MODE {
+                    let debug_rect = Rectangle::new(
+                        shotgun_data.position.x - origin.x,
+                        shotgun_data.position.y - origin.y,
+                        shotgun_data.width,
+                        shotgun_data.height,
                     );
                     d.draw_rectangle_lines_ex(debug_rect, 2.0, Color::RED);
                 }

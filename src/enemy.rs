@@ -249,7 +249,7 @@ impl EnemyType {
     pub fn new_servo_skull(position: Position) -> Enemy {
         Enemy {
             enemy_type: EnemyType::ServoSkull,
-            health: 30,
+            health: 10,
             max_health: 30,
             speed: 450,
             damage: 10,
