@@ -27,6 +27,11 @@ impl MouseInformation {
 
 pub struct Player {
     pub position: Position,
+    /// derived from the mouse aiming
+    pub aiming_direction: Direction,
+    /// derived from the player moving.
+    pub moving_direction: Direction,
+
     pub mouse_info: MouseInformation,
 
     pub move_speed: f32,
@@ -45,22 +50,20 @@ impl<'a> Player {
     pub fn new(position: Position, texture: Texture2D) -> Self {
         Player {
             position,
+            aiming_direction: Direction::Right,
+            moving_direction: Direction::Right,
             mouse_info: MouseInformation(0.0),
             move_speed: 300.0,
             health: 100,
             max_health: 100,
             statuses: vec![],
             weapons: [
-                Some(Weapon::Bolter(WeaponData {
-                    damage: 1.0,
-                    tick_interval: 0.5,
-                    time_since_last_tick: 0.0,
-                })),
                 Some(Weapon::PowerSword(WeaponData {
                     damage: 1.0,
                     tick_interval: 0.5,
                     time_since_last_tick: 0.0,
                 })),
+                None,
                 None,
             ],
             texture: texture,
@@ -81,7 +84,7 @@ impl<'a> Player {
         // Calculate angle in radians (atan2 returns -PI to PI)
         let angle = dy.atan2(dx);
         self.mouse_info = MouseInformation(angle);
-        self.position.direction = self.mouse_info.get_direction();
+        self.aiming_direction = self.mouse_info.get_direction();
     }
 
     pub fn handle_user_input(&mut self, rl: &raylib::RaylibHandle, delta: &f32) {
@@ -90,15 +93,19 @@ impl<'a> Player {
 
         // Handle WASD input (movement only, direction is handled by mouse)
         if rl.is_key_down(KeyboardKey::KEY_W) {
+            self.moving_direction = Direction::Up;
             self.position.y -= effective_speed * delta;
         }
         if rl.is_key_down(KeyboardKey::KEY_S) {
+            self.moving_direction = Direction::Down;
             self.position.y += effective_speed * delta;
         }
         if rl.is_key_down(KeyboardKey::KEY_A) {
+            self.moving_direction = Direction::Left;
             self.position.x -= effective_speed * delta;
         }
         if rl.is_key_down(KeyboardKey::KEY_D) {
+            self.moving_direction = Direction::Right;
             self.position.x += effective_speed * delta;
         }
     }
@@ -168,7 +175,7 @@ impl<'a> Player {
                         let position = Position {
                             x: self.position.x + angle.cos() * offset,
                             y: self.position.y + angle.sin() * offset,
-                            direction: self.position.direction,
+                            direction: self.aiming_direction,
                         };
                         res.push(Projectile::Bolter(BolterProjectile::new(
                             position,
@@ -181,7 +188,7 @@ impl<'a> Player {
                     data.time_since_last_tick += delta;
                     let offset = (self.texture.width / 2) as f32;
 
-                    let rotation = match self.position.direction {
+                    let rotation = match self.moving_direction {
                         Direction::Up => 1.0,
                         Direction::Down => 1.0,
                         Direction::Left => -1.0,
@@ -191,7 +198,7 @@ impl<'a> Player {
                         let position = Position {
                             x: self.position.x + (offset * rotation),
                             y: self.position.y,
-                            direction: self.position.direction,
+                            direction: self.moving_direction,
                         };
                         res.push(Projectile::PowerSword(PowerSwordProjectile::new(position)));
                         data.time_since_last_tick = 0.0;

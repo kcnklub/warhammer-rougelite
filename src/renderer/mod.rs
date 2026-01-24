@@ -83,7 +83,7 @@ pub fn render_game_state(game_state: &mut GameState, thread: &raylib::RaylibThre
 }
 
 fn render_player(d: &mut RaylibMode2D<RaylibDrawHandle>, player: &Player) {
-    let source_width = match player.position.direction {
+    let source_width = match player.aiming_direction {
         Direction::Up => player.texture.width as f32,
         Direction::Down => player.texture.width as f32,
         Direction::Left => -1.0 * player.texture.width as f32,
@@ -207,32 +207,58 @@ fn render_debug_stats(
     y += line_height;
 
     d.draw_text(
-        &format!("Player: ({:.1}, {:.1})", player.position.x, player.position.y),
-        x, y, font_size, Color::YELLOW,
+        &format!(
+            "Player: ({:.1}, {:.1})",
+            player.position.x, player.position.y
+        ),
+        x,
+        y,
+        font_size,
+        Color::YELLOW,
     );
     y += line_height;
 
     d.draw_text(
-        &format!("Player Dir: {:?}", player.position.direction),
-        x, y, font_size, Color::YELLOW,
+        &format!("Player Aiming Dir: {:?}", player.aiming_direction),
+        x,
+        y,
+        font_size,
+        Color::YELLOW,
+    );
+    y += line_height;
+    d.draw_text(
+        &format!("Player moving Dir: {:?}", player.moving_direction),
+        x,
+        y,
+        font_size,
+        Color::YELLOW,
     );
     y += line_height;
 
     d.draw_text(
         &format!("Mouse Dir: {:.1}°", player.mouse_info.get_angle_degrees()),
-        x, y, font_size, Color::YELLOW,
+        x,
+        y,
+        font_size,
+        Color::YELLOW,
     );
     y += line_height;
 
     d.draw_text(
         &format!("Enemies: {}", enemies.enemies.len()),
-        x, y, font_size, Color::YELLOW,
+        x,
+        y,
+        font_size,
+        Color::YELLOW,
     );
     y += line_height;
 
     d.draw_text(
         &format!("Projectiles: {}", projectiles.projectiles.len()),
-        x, y, font_size, Color::YELLOW,
+        x,
+        y,
+        font_size,
+        Color::YELLOW,
     );
 }
 
@@ -315,14 +341,13 @@ fn render_projectiles(d: &mut RaylibMode2D<RaylibDrawHandle>, projectiles: &AllP
                 }
             }
             Projectile::PowerSword(sword_data) => {
-                let rect = sword_data.get_collision_rect();
                 let slash_offset = sword_data.get_slash_offset();
                 let rotation = 0.0;
 
                 let (offset_x, offset_y) = match sword_data.position.direction {
                     Direction::Up => (slash_offset, 0.0),
                     Direction::Down => (-slash_offset, 0.0),
-                    Direction::Left => (0.0, -slash_offset),
+                    Direction::Left => (0.0, slash_offset),
                     Direction::Right => (0.0, slash_offset),
                 };
 
@@ -337,7 +362,13 @@ fn render_projectiles(d: &mut RaylibMode2D<RaylibDrawHandle>, projectiles: &AllP
                 d.draw_rectangle_pro(dest_rec, origin, rotation, Color::BLUE);
 
                 if game_state::DEBUG_MODE {
-                    d.draw_rectangle_lines_ex(dest_rec, 2.0, Color::RED);
+                    let debug_rect = Rectangle::new(
+                        sword_data.position.x + offset_x,
+                        sword_data.position.y + offset_y - (sword_data.height / 2.0),
+                        sword_data.width,
+                        sword_data.height,
+                    );
+                    d.draw_rectangle_lines_ex(debug_rect, 2.0, Color::RED);
                 }
             }
         }

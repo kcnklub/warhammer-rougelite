@@ -38,6 +38,26 @@ impl<'a> AllProjectiles<'a> {
                     bolter_data.position.y += angle.sin() * bolter_data.speed * delta;
                 }
                 Projectile::PowerSword(sword_data) => {
+                    let rotation = match player.moving_direction {
+                        Direction::Up => 1.0,
+                        Direction::Down => 1.0,
+                        Direction::Left => -1.0,
+                        Direction::Right => 1.0,
+                    };
+                    let x_offset = match player.moving_direction {
+                        Direction::Up => (player.texture.width / 2) as f32,
+                        Direction::Down => (player.texture.width / 2) as f32,
+                        Direction::Left => {
+                            ((player.texture.width / 2) + player.texture.width / 3) as f32
+                        }
+                        Direction::Right => (player.texture.width / 2) as f32,
+                    };
+                    let y_offset = (player.texture.height / 2) as f32;
+                    sword_data.position = Position {
+                        x: player.position.x + (x_offset * rotation),
+                        y: player.position.y,
+                        direction: Direction::Right,
+                    };
                     sword_data.lifetime -= delta;
                 }
             };
@@ -54,8 +74,7 @@ impl<'a> AllProjectiles<'a> {
                 Projectile::Bolter(b) => &b.position,
                 Projectile::PowerSword(s) => &s.position,
             };
-            pos.x >= cull_left && pos.x <= cull_right &&
-            pos.y >= cull_top && pos.y <= cull_bottom
+            pos.x >= cull_left && pos.x <= cull_right && pos.y >= cull_top && pos.y <= cull_bottom
         });
     }
 
@@ -88,7 +107,25 @@ impl<'a> AllProjectiles<'a> {
                         }
                     }
                 }
-                Projectile::PowerSword(_) => {}
+                Projectile::PowerSword(sword_data) => {
+                    for enemy in all_enemies.enemies.iter_mut() {
+                        let texture = all_enemies
+                            .texture_map
+                            .get(&enemy.enemy_type)
+                            .expect("unable to find texture");
+                        let enemy_rec = Rectangle {
+                            x: enemy.position.x,
+                            y: enemy.position.y,
+                            width: texture.width as f32,
+                            height: texture.height as f32,
+                        };
+                        let sword_rect = sword_data.get_collision_rect();
+                        if enemy_rec.check_collision_recs(&sword_rect) {
+                            enemy.health -= sword_data.damage;
+                            println!("Enemy Health: {}", enemy.health);
+                        }
+                    }
+                }
             };
         }
 
@@ -146,9 +183,9 @@ impl PowerSwordProjectile {
             position,
             lifetime: 0.25,
             max_lifetime: 0.25,
-            width: 80.0,
+            width: 120.0,
             height: 20.0,
-            slash_distance: 60.0,
+            slash_distance: 250.0,
         }
     }
 
