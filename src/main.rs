@@ -2,7 +2,7 @@ use warhammer_rougelite::{
     game_state,
     player::{self},
     renderer::render_game_state,
-    utils::{Direction, Position},
+    utils::Position,
 };
 
 fn main() {
@@ -42,7 +42,6 @@ fn main() {
     let position = Position {
         x: (rl.get_screen_width() / 2) as f32,
         y: (rl.get_screen_height() / 2) as f32,
-        direction: Direction::Right,
     };
     let player = player::Player::new(position, player_texture);
 

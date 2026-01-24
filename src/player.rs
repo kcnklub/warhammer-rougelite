@@ -1,5 +1,5 @@
 use crate::{
-    projectile::{BolterProjectile, PowerSwordProjectile, Projectile},
+    projectiles::{BolterProjectile, PowerSwordProjectile, Projectile},
     statuses::*,
     weapons::{Weapon, WeaponData},
 };
@@ -183,7 +183,6 @@ impl<'a> Player {
                         let position = Position {
                             x: self.position.x + angle.cos() * offset,
                             y: self.position.y + angle.sin() * offset,
-                            direction: self.aiming_direction,
                         };
                         res.push(Projectile::Bolter(BolterProjectile::new(
                             position,
@@ -206,9 +205,11 @@ impl<'a> Player {
                         let position = Position {
                             x: self.position.x + (offset * rotation),
                             y: self.position.y,
-                            direction: self.moving_direction,
                         };
-                        res.push(Projectile::PowerSword(PowerSwordProjectile::new(position)));
+                        res.push(Projectile::PowerSword(PowerSwordProjectile::new(
+                            position,
+                            self.moving_direction,
+                        )));
                         data.time_since_last_tick = 0.0;
                     }
                 }

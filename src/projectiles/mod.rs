@@ -48,8 +48,8 @@ impl<'a> AllProjectiles<'a> {
                     sword_data.position = Position {
                         x: player.position.x + (x_offset * rotation),
                         y: player.position.y,
-                        direction: player.moving_direction,
                     };
+                    sword_data.direction = player.moving_direction;
                     sword_data.lifetime -= delta;
                 }
             };
@@ -162,8 +162,8 @@ impl BolterProjectile {
 #[derive(Clone, Copy)]
 pub struct PowerSwordProjectile {
     pub damage: i32,
-    pub hits: i32,
     pub position: Position,
+    pub direction: Direction,
     pub lifetime: f32,
     pub max_lifetime: f32,
     pub width: f32,
@@ -172,11 +172,11 @@ pub struct PowerSwordProjectile {
 }
 
 impl PowerSwordProjectile {
-    pub fn new(position: Position) -> Self {
+    pub fn new(position: Position, direction: Direction) -> Self {
         PowerSwordProjectile {
             damage: 25,
-            hits: 0,
             position,
+            direction,
             lifetime: 0.25,
             max_lifetime: 0.25,
             width: 120.0,
@@ -196,7 +196,7 @@ impl PowerSwordProjectile {
 
     pub fn get_collision_rect(&self) -> Rectangle {
         let slash_offset = self.get_slash_offset();
-        match self.position.direction {
+        match self.direction {
             Direction::Up => Rectangle {
                 x: self.position.x - self.height / 2.0 + slash_offset,
                 y: self.position.y - self.width,

@@ -2,12 +2,12 @@ use crate::{
     enemy::AllEnemies,
     game_state::{self, GameState},
     player::{PLAYER_SCALE, Player},
-    projectile::AllProjectiles,
+    projectiles::AllProjectiles,
     utils::Direction,
 };
 use raylib::{color::Color, prelude::*};
 
-use crate::projectile::Projectile;
+use crate::projectiles::Projectile;
 
 pub mod background;
 
@@ -264,7 +264,7 @@ pub fn render_enemies(d: &mut RaylibMode2D<RaylibDrawHandle>, enemies: &AllEnemi
             .texture_map
             .get(&enemy.enemy_type)
             .expect("No texture found for enemy");
-        let source_width = match enemy.position.direction {
+        let source_width = match enemy.direction {
             Direction::Up => texture.width as f32,
             Direction::Down => texture.width as f32,
             Direction::Left => texture.width as f32,
@@ -342,7 +342,7 @@ fn render_projectiles(d: &mut RaylibMode2D<RaylibDrawHandle>, projectiles: &AllP
 
                 let (offset_x, offset_y) = (0.0, slash_offset);
 
-                let origin = match sword_data.position.direction {
+                let origin = match sword_data.direction {
                     Direction::Left => Vector2::new(sword_data.width, sword_data.height / 2.0),
                     _ => Vector2::new(0.0, sword_data.height / 2.0),
                 };

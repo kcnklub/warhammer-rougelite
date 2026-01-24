@@ -1,7 +1,8 @@
 use raylib::prelude::*;
 
 use crate::{
-    enemy::AllEnemies, player::Player, projectile::AllProjectiles, renderer::background::Background,
+    enemy::AllEnemies, player::Player, projectiles::AllProjectiles,
+    renderer::background::Background,
 };
 
 pub const DEBUG_MODE: bool = true;

@@ -11,14 +11,14 @@ use crate::{
 const SPEED: f32 = 2000.0;
 
 // Spawn rate scaling constants
-const BASE_SPAWN_RATE: f32 = 3.0;       // Starting spawn interval (seconds)
-const MIN_SPAWN_RATE: f32 = 0.3;        // Minimum spawn interval (floor)
+const BASE_SPAWN_RATE: f32 = 3.0; // Starting spawn interval (seconds)
+const MIN_SPAWN_RATE: f32 = 0.3; // Minimum spawn interval (floor)
 const SPAWN_SCALING_FACTOR: f32 = 60.0; // How quickly difficulty ramps up
 
 // Viewport and spawn positioning
-const SCREEN_HALF_WIDTH: f32 = 1240.0;  // 2480 / 2
-const SCREEN_HALF_HEIGHT: f32 = 720.0;  // 1440 / 2
-const SPAWN_BUFFER: f32 = 100.0;        // Pixels outside viewport to spawn
+const SCREEN_HALF_WIDTH: f32 = 1240.0; // 2480 / 2
+const SCREEN_HALF_HEIGHT: f32 = 720.0; // 1440 / 2
+const SPAWN_BUFFER: f32 = 100.0; // Pixels outside viewport to spawn
 
 #[derive(Clone, Copy)]
 enum SpawnEdge {
@@ -71,11 +71,7 @@ fn calculate_spawn_position(player_pos: &Position, rng: &mut impl Rng) -> Positi
         }
     };
 
-    Position {
-        x,
-        y,
-        direction: Direction::Down,
-    }
+    Position { x, y }
 }
 
 pub struct AllEnemies<'a> {
@@ -167,7 +163,7 @@ fn handle_movement(player: &Player, enemy: &mut Enemy, delta: &f32) {
 
     // Step 6: Update direction based on velocity
     if enemy.velocity_x.abs() > 0.1 {
-        enemy.position.direction = if enemy.velocity_x > 0.0 {
+        enemy.direction = if enemy.velocity_x > 0.0 {
             Direction::Right
         } else {
             Direction::Left
@@ -232,6 +228,7 @@ pub struct Enemy {
     pub attack_speed: f32,
 
     pub position: Position,
+    pub direction: Direction,
     pub velocity_x: f32,
     pub velocity_y: f32,
 
@@ -258,26 +255,7 @@ impl EnemyType {
             damage: 10,
             time_since_last_attack: 0.0,
             attack_speed: 1.0,
-            position,
-            velocity_x: 0.0,
-            velocity_y: 0.0,
-            knockback_cooldown: 0.0,
-        }
-    }
-
-    pub fn dark_fighter_type() -> EnemyType {
-        EnemyType::DarkFighter
-    }
-
-    pub fn new_dark_fighter(position: Position) -> Enemy {
-        Enemy {
-            enemy_type: EnemyType::DarkFighter,
-            health: 30,
-            max_health: 30,
-            speed: 450,
-            damage: 10,
-            time_since_last_attack: 0.0,
-            attack_speed: 1.0,
+            direction: Direction::Right,
             position,
             velocity_x: 0.0,
             velocity_y: 0.0,
@@ -305,14 +283,7 @@ mod tests {
             };
             Texture2D::from_raw(raw_texture)
         };
-        Player::new(
-            Position {
-                x,
-                y,
-                direction: Direction::Down,
-            },
-            texture,
-        )
+        Player::new(Position { x, y }, texture)
     }
 
     #[test]
@@ -321,11 +292,7 @@ mod tests {
         let player = create_test_player(100.0, 100.0);
 
         // Create an enemy at (0, 0) with zero initial velocity
-        let mut enemy = EnemyType::new_servo_skull(Position {
-            x: 0.0,
-            y: 0.0,
-            direction: Direction::Down,
-        });
+        let mut enemy = EnemyType::new_servo_skull(Position { x: 0.0, y: 0.0 });
 
         let delta = 0.1; // 100ms time step
 
@@ -404,11 +371,7 @@ mod tests {
     fn test_velocity_accumulation() {
         let player = create_test_player(1000.0, 0.0);
 
-        let mut enemy = EnemyType::new_servo_skull(Position {
-            x: 0.0,
-            y: 0.0,
-            direction: Direction::Down,
-        });
+        let mut enemy = EnemyType::new_servo_skull(Position { x: 0.0, y: 0.0 });
 
         let delta = 0.016; // ~60fps
 
@@ -441,11 +404,7 @@ mod tests {
         // Place player far away so acceleration is minimal
         let player = create_test_player(100.0, 100.0);
 
-        let mut enemy = EnemyType::new_servo_skull(Position {
-            x: 100.0,
-            y: 100.0,
-            direction: Direction::Down,
-        });
+        let mut enemy = EnemyType::new_servo_skull(Position { x: 100.0, y: 100.0 });
 
         // Give enemy initial velocity in x direction (perpendicular to player)
         enemy.velocity_x = 100.0;
@@ -487,12 +446,7 @@ mod tests {
 
     // Helper to create a collision rectangle centered on a position (matches rendering)
     fn create_centered_enemy_rect(pos_x: f32, pos_y: f32, width: f32, height: f32) -> Rectangle {
-        Rectangle::new(
-            pos_x - width / 2.0,
-            pos_y - height / 2.0,
-            width,
-            height,
-        )
+        Rectangle::new(pos_x - width / 2.0, pos_y - height / 2.0, width, height)
     }
 
     #[test]
@@ -503,7 +457,8 @@ mod tests {
         let texture_width = 64.0;
         let texture_height = 64.0;
 
-        let rect = create_centered_enemy_rect(enemy_pos_x, enemy_pos_y, texture_width, texture_height);
+        let rect =
+            create_centered_enemy_rect(enemy_pos_x, enemy_pos_y, texture_width, texture_height);
 
         // The collision rectangle should be centered on enemy position
         // For a 64x64 texture at (100, 100):
@@ -517,8 +472,14 @@ mod tests {
         // Verify the center of the rectangle is at the enemy position
         let rect_center_x = rect.x + rect.width / 2.0;
         let rect_center_y = rect.y + rect.height / 2.0;
-        assert_eq!(rect_center_x, enemy_pos_x, "Rectangle center X should match enemy position");
-        assert_eq!(rect_center_y, enemy_pos_y, "Rectangle center Y should match enemy position");
+        assert_eq!(
+            rect_center_x, enemy_pos_x,
+            "Rectangle center X should match enemy position"
+        );
+        assert_eq!(
+            rect_center_y, enemy_pos_y,
+            "Rectangle center Y should match enemy position"
+        );
     }
 
     #[test]
@@ -538,7 +499,8 @@ mod tests {
         let player_point = Vector2::new(0.0, 0.0);
 
         // At exactly the boundary, collision should occur (edges touching)
-        let collides_at_boundary = enemy_rect.check_collision_circle_rec(player_point, player_radius);
+        let collides_at_boundary =
+            enemy_rect.check_collision_circle_rec(player_point, player_radius);
         assert!(
             collides_at_boundary,
             "Collision should occur when enemy edge touches player circle (distance={})",
@@ -546,8 +508,10 @@ mod tests {
         );
 
         // One pixel inside boundary should definitely collide
-        let enemy_rect_inside = create_centered_enemy_rect(boundary_distance - 1.0, 0.0, 64.0, 64.0);
-        let collides_inside = enemy_rect_inside.check_collision_circle_rec(player_point, player_radius);
+        let enemy_rect_inside =
+            create_centered_enemy_rect(boundary_distance - 1.0, 0.0, 64.0, 64.0);
+        let collides_inside =
+            enemy_rect_inside.check_collision_circle_rec(player_point, player_radius);
         assert!(
             collides_inside,
             "Collision should occur when enemy is inside boundary"
@@ -578,8 +542,10 @@ mod tests {
         );
 
         // Test diagonal case - enemy far away diagonally
-        let enemy_rect_diagonal = create_centered_enemy_rect(safe_distance, safe_distance, 64.0, 64.0);
-        let collides_diagonal = enemy_rect_diagonal.check_collision_circle_rec(player_point, player_radius);
+        let enemy_rect_diagonal =
+            create_centered_enemy_rect(safe_distance, safe_distance, 64.0, 64.0);
+        let collides_diagonal =
+            enemy_rect_diagonal.check_collision_circle_rec(player_point, player_radius);
         assert!(
             !collides_diagonal,
             "No collision should occur when enemy is diagonally away"
