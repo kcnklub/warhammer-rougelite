@@ -1,6 +1,6 @@
 use crate::{
     enemy::AllEnemies,
-    game_state::{self, GameState},
+    game_state::{self, GameState, MultiMeltaShader},
     player::{Player, PLAYER_SCALE},
     projectiles::AllProjectiles,
     utils::Direction,
@@ -47,7 +47,13 @@ pub fn render_game_state(game_state: &mut GameState, thread: &raylib::RaylibThre
 
         // Game entities (normal layer)
         render_player(&mut d2, &game_state.player);
-        render_projectiles(&mut d2, &game_state.projectiles);
+        render_projectiles(
+            &mut d2,
+            &game_state.projectiles,
+            &game_state.white_texture,
+            &mut game_state.multi_melta_shader,
+            game_state.elapsed_time,
+        );
         render_enemies(&mut d2, &game_state.enemies);
         render_crosshair(&mut d2, mouse_world);
     }
@@ -293,7 +299,13 @@ pub fn render_enemies(d: &mut RaylibMode2D<RaylibDrawHandle>, enemies: &AllEnemi
     }
 }
 
-fn render_projectiles(d: &mut RaylibMode2D<RaylibDrawHandle>, projectiles: &AllProjectiles) {
+fn render_projectiles(
+    d: &mut RaylibMode2D<RaylibDrawHandle>,
+    projectiles: &AllProjectiles,
+    white_texture: &Texture2D,
+    multi_melta_shader: &mut MultiMeltaShader,
+    elapsed_time: f32,
+) {
     let active_projectiles = &projectiles.projectiles;
     for projetile in active_projectiles {
         match projetile {
@@ -370,52 +382,64 @@ fn render_projectiles(d: &mut RaylibMode2D<RaylibDrawHandle>, projectiles: &AllP
                 let width = melta_data.current_width();
                 let length = melta_data.length;
 
-                let outer_width = width * 1.25;
-                let outer_length = length * 1.15;
-                let mid_width = width * 1.05;
-                let mid_length = length * 1.05;
-
-                let outer_rec = Rectangle::new(
-                    melta_data.position.x,
-                    melta_data.position.y,
-                    outer_length,
-                    outer_width,
-                );
-                let mid_rec = Rectangle::new(
-                    melta_data.position.x,
-                    melta_data.position.y,
-                    mid_length,
-                    mid_width,
-                );
-                let core_rec =
+                let dest_rec =
                     Rectangle::new(melta_data.position.x, melta_data.position.y, length, width);
+                let origin = Vector2::new(length / 2.0, width / 2.0);
 
-                let outer_origin = Vector2::new(outer_length / 2.0, outer_width / 2.0);
-                let mid_origin = Vector2::new(mid_length / 2.0, mid_width / 2.0);
-                let core_origin = Vector2::new(length / 2.0, width / 2.0);
+                let noise_scale = 6.0_f32;
+                let intensity = 1.6_f32;
+                let alpha = 0.95_f32;
+                let color_hot = [1.0_f32, 0.95_f32, 0.75_f32];
+                let color_mid = [1.0_f32, 0.45_f32, 0.05_f32];
+                let color_cool = [0.75_f32, 0.05_f32, 0.0_f32];
 
-                d.draw_rectangle_pro(
-                    outer_rec,
-                    outer_origin,
-                    rotation,
-                    Color::new(255, 90, 0, 70),
+                multi_melta_shader
+                    .shader
+                    .set_shader_value(multi_melta_shader.time_loc, elapsed_time);
+                multi_melta_shader
+                    .shader
+                    .set_shader_value(multi_melta_shader.noise_scale_loc, noise_scale);
+                multi_melta_shader
+                    .shader
+                    .set_shader_value(multi_melta_shader.intensity_loc, intensity);
+                multi_melta_shader
+                    .shader
+                    .set_shader_value(multi_melta_shader.alpha_loc, alpha);
+                multi_melta_shader
+                    .shader
+                    .set_shader_value(multi_melta_shader.color_hot_loc, color_hot);
+                multi_melta_shader
+                    .shader
+                    .set_shader_value(multi_melta_shader.color_mid_loc, color_mid);
+                multi_melta_shader
+                    .shader
+                    .set_shader_value(multi_melta_shader.color_cool_loc, color_cool);
+
+                let source_rec = Rectangle::new(
+                    0.0,
+                    0.0,
+                    white_texture.width as f32,
+                    white_texture.height as f32,
                 );
-                d.draw_rectangle_pro(mid_rec, mid_origin, rotation, Color::new(255, 150, 30, 140));
-                d.draw_rectangle_pro(
-                    core_rec,
-                    core_origin,
+
+                let mut shader_mode = d.begin_shader_mode(&mut multi_melta_shader.shader);
+                shader_mode.draw_texture_pro(
+                    white_texture,
+                    source_rec,
+                    dest_rec,
+                    origin,
                     rotation,
-                    Color::new(255, 225, 140, 220),
+                    Color::WHITE,
                 );
 
                 if game_state::DEBUG_MODE {
                     let debug_rect = Rectangle::new(
-                        melta_data.position.x - core_origin.x,
-                        melta_data.position.y - core_origin.y,
+                        melta_data.position.x - origin.x,
+                        melta_data.position.y - origin.y,
                         length,
                         width,
                     );
-                    d.draw_rectangle_lines_ex(debug_rect, 2.0, Color::RED);
+                    shader_mode.draw_rectangle_lines_ex(debug_rect, 2.0, Color::RED);
                 }
             }
             Projectile::Shotgun(shotgun_data) => {

@@ -1,4 +1,4 @@
-use raylib::prelude::*;
+use raylib::prelude::{RaylibShader, *};
 
 use crate::{
     enemy::AllEnemies, player::Player, projectiles::AllProjectiles,
@@ -13,24 +13,67 @@ pub struct GameState<'a> {
     pub projectiles: AllProjectiles<'a>,
     pub enemies: AllEnemies<'a>,
     pub background: Background<'a>,
+    pub white_texture: Texture2D,
+    pub multi_melta_shader: MultiMeltaShader,
     pub elapsed_time: f32,
+}
+
+pub struct MultiMeltaShader {
+    pub shader: Shader,
+    pub time_loc: i32,
+    pub noise_scale_loc: i32,
+    pub intensity_loc: i32,
+    pub alpha_loc: i32,
+    pub color_hot_loc: i32,
+    pub color_mid_loc: i32,
+    pub color_cool_loc: i32,
 }
 
 impl<'a> GameState<'a> {
     pub fn new(
         rl: &'a mut raylib::RaylibHandle,
+        thread: &raylib::RaylibThread,
         player: Player,
         enemy_texture: &'a Texture2D,
         bullet_texture: &'a Texture2D,
         ground_texture1: &'a Texture2D,
         ground_texture2: &'a Texture2D,
     ) -> Self {
+        let multi_melta_shader =
+            rl.load_shader(thread, None, Some("./assests/shaders/multi_melta_flame.fs"));
+        if !multi_melta_shader.is_shader_valid() {
+            panic!("Multi Melta shader failed to load");
+        }
+
+        let white_image = Image::gen_image_color(1, 1, Color::WHITE);
+        let white_texture = rl
+            .load_texture_from_image(thread, &white_image)
+            .expect("failed to create white texture");
+        let time_loc = multi_melta_shader.get_shader_location("time");
+        let noise_scale_loc = multi_melta_shader.get_shader_location("noise_scale");
+        let intensity_loc = multi_melta_shader.get_shader_location("intensity");
+        let alpha_loc = multi_melta_shader.get_shader_location("alpha");
+        let color_hot_loc = multi_melta_shader.get_shader_location("color_hot");
+        let color_mid_loc = multi_melta_shader.get_shader_location("color_mid");
+        let color_cool_loc = multi_melta_shader.get_shader_location("color_cool");
+
         GameState {
             rl,
             player,
             projectiles: AllProjectiles::new(bullet_texture),
             enemies: AllEnemies::new(enemy_texture),
             background: Background::new(ground_texture1, ground_texture2),
+            white_texture,
+            multi_melta_shader: MultiMeltaShader {
+                shader: multi_melta_shader,
+                time_loc,
+                noise_scale_loc,
+                intensity_loc,
+                alpha_loc,
+                color_hot_loc,
+                color_mid_loc,
+                color_cool_loc,
+            },
             elapsed_time: 0.0,
         }
     }

@@ -47,6 +47,7 @@ fn main() {
 
     let mut game_state = game_state::GameState::new(
         &mut rl,
+        &thread,
         player,
         &enemy_texture,
         &bullet_texture,
