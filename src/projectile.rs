@@ -44,19 +44,11 @@ impl<'a> AllProjectiles<'a> {
                         Direction::Left => -1.0,
                         Direction::Right => 1.0,
                     };
-                    let x_offset = match player.moving_direction {
-                        Direction::Up => (player.texture.width / 2) as f32,
-                        Direction::Down => (player.texture.width / 2) as f32,
-                        Direction::Left => {
-                            ((player.texture.width / 2) + player.texture.width / 3) as f32
-                        }
-                        Direction::Right => (player.texture.width / 2) as f32,
-                    };
-                    let y_offset = (player.texture.height / 2) as f32;
+                    let x_offset = (player.texture.width / 2) as f32;
                     sword_data.position = Position {
                         x: player.position.x + (x_offset * rotation),
                         y: player.position.y,
-                        direction: Direction::Right,
+                        direction: player.moving_direction,
                     };
                     sword_data.lifetime -= delta;
                 }
@@ -87,9 +79,11 @@ impl<'a> AllProjectiles<'a> {
                             .texture_map
                             .get(&enemy.enemy_type)
                             .expect("unable to find texture");
+                        let half_width = texture.width as f32 / 2.0;
+                        let half_height = texture.height as f32 / 2.0;
                         let enemy_rec = Rectangle {
-                            x: enemy.position.x,
-                            y: enemy.position.y,
+                            x: enemy.position.x - half_width,
+                            y: enemy.position.y - half_height,
                             width: texture.width as f32,
                             height: texture.height as f32,
                         };
@@ -113,9 +107,11 @@ impl<'a> AllProjectiles<'a> {
                             .texture_map
                             .get(&enemy.enemy_type)
                             .expect("unable to find texture");
+                        let half_width = texture.width as f32 / 2.0;
+                        let half_height = texture.height as f32 / 2.0;
                         let enemy_rec = Rectangle {
-                            x: enemy.position.x,
-                            y: enemy.position.y,
+                            x: enemy.position.x - half_width,
+                            y: enemy.position.y - half_height,
                             width: texture.width as f32,
                             height: texture.height as f32,
                         };

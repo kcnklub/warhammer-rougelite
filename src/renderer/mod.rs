@@ -1,7 +1,7 @@
 use crate::{
     enemy::AllEnemies,
     game_state::{self, GameState},
-    player::{Player, PLAYER_SCALE},
+    player::{PLAYER_SCALE, Player},
     projectile::AllProjectiles,
     utils::Direction,
 };
@@ -340,14 +340,12 @@ fn render_projectiles(d: &mut RaylibMode2D<RaylibDrawHandle>, projectiles: &AllP
                 let slash_offset = sword_data.get_slash_offset();
                 let rotation = 0.0;
 
-                let (offset_x, offset_y) = match sword_data.position.direction {
-                    Direction::Up => (slash_offset, 0.0),
-                    Direction::Down => (-slash_offset, 0.0),
-                    Direction::Left => (0.0, slash_offset),
-                    Direction::Right => (0.0, slash_offset),
-                };
+                let (offset_x, offset_y) = (0.0, slash_offset);
 
-                let origin = Vector2::new(0.0, sword_data.height / 2.0);
+                let origin = match sword_data.position.direction {
+                    Direction::Left => Vector2::new(sword_data.width, sword_data.height / 2.0),
+                    _ => Vector2::new(0.0, sword_data.height / 2.0),
+                };
                 let dest_rec = Rectangle::new(
                     sword_data.position.x + offset_x,
                     sword_data.position.y + offset_y,
@@ -359,8 +357,8 @@ fn render_projectiles(d: &mut RaylibMode2D<RaylibDrawHandle>, projectiles: &AllP
 
                 if game_state::DEBUG_MODE {
                     let debug_rect = Rectangle::new(
-                        sword_data.position.x + offset_x,
-                        sword_data.position.y + offset_y - (sword_data.height / 2.0),
+                        sword_data.position.x + offset_x - origin.x,
+                        sword_data.position.y + offset_y - origin.y,
                         sword_data.width,
                         sword_data.height,
                     );
