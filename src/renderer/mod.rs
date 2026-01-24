@@ -365,6 +365,59 @@ fn render_projectiles(d: &mut RaylibMode2D<RaylibDrawHandle>, projectiles: &AllP
                     d.draw_rectangle_lines_ex(debug_rect, 2.0, Color::RED);
                 }
             }
+            Projectile::MultiMelta(melta_data) => {
+                let rotation = melta_data.angle.to_degrees();
+                let width = melta_data.current_width();
+                let length = melta_data.length;
+
+                let outer_width = width * 1.25;
+                let outer_length = length * 1.15;
+                let mid_width = width * 1.05;
+                let mid_length = length * 1.05;
+
+                let outer_rec = Rectangle::new(
+                    melta_data.position.x,
+                    melta_data.position.y,
+                    outer_length,
+                    outer_width,
+                );
+                let mid_rec = Rectangle::new(
+                    melta_data.position.x,
+                    melta_data.position.y,
+                    mid_length,
+                    mid_width,
+                );
+                let core_rec =
+                    Rectangle::new(melta_data.position.x, melta_data.position.y, length, width);
+
+                let outer_origin = Vector2::new(outer_length / 2.0, outer_width / 2.0);
+                let mid_origin = Vector2::new(mid_length / 2.0, mid_width / 2.0);
+                let core_origin = Vector2::new(length / 2.0, width / 2.0);
+
+                d.draw_rectangle_pro(
+                    outer_rec,
+                    outer_origin,
+                    rotation,
+                    Color::new(255, 90, 0, 70),
+                );
+                d.draw_rectangle_pro(mid_rec, mid_origin, rotation, Color::new(255, 150, 30, 140));
+                d.draw_rectangle_pro(
+                    core_rec,
+                    core_origin,
+                    rotation,
+                    Color::new(255, 225, 140, 220),
+                );
+
+                if game_state::DEBUG_MODE {
+                    let debug_rect = Rectangle::new(
+                        melta_data.position.x - core_origin.x,
+                        melta_data.position.y - core_origin.y,
+                        length,
+                        width,
+                    );
+                    d.draw_rectangle_lines_ex(debug_rect, 2.0, Color::RED);
+                }
+            }
             Projectile::Shotgun(shotgun_data) => {
                 let rotation = shotgun_data.angle.to_degrees();
                 let origin = Vector2::new(shotgun_data.width / 2.0, shotgun_data.height / 2.0);

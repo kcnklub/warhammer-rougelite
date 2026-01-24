@@ -1,7 +1,7 @@
 use crate::{
     projectiles::{
-        bolter::BolterProjectile, power_sword::PowerSwordProjectile, shotgun::ShotgunProjectile,
-        Projectile,
+        bolter::BolterProjectile, multi_melta::MultiMeltaProjectile,
+        power_sword::PowerSwordProjectile, shotgun::ShotgunProjectile, Projectile,
     },
     statuses::*,
     weapons::{Weapon, WeaponData},
@@ -74,7 +74,11 @@ impl<'a> Player {
                     tick_interval: 0.9,
                     time_since_last_tick: 0.0,
                 })),
-                None,
+                Some(Weapon::MultiMelta(WeaponData {
+                    damage: 1.0,
+                    tick_interval: 1.1,
+                    time_since_last_tick: 0.0,
+                })),
                 None,
             ],
             texture,
@@ -245,6 +249,22 @@ impl<'a> Player {
                             res.push(Projectile::Shotgun(ShotgunProjectile::new(position, angle)));
                         }
 
+                        data.time_since_last_tick = 0.0;
+                    }
+                }
+                Weapon::MultiMelta(data) => {
+                    data.time_since_last_tick += delta;
+                    let offset = (self.texture.width / 2) as f32;
+
+                    if data.time_since_last_tick >= data.tick_interval {
+                        let angle = self.mouse_info.0;
+                        let position = Position {
+                            x: self.position.x + angle.cos() * offset,
+                            y: self.position.y + angle.sin() * offset,
+                        };
+                        res.push(Projectile::MultiMelta(MultiMeltaProjectile::new(
+                            position, angle,
+                        )));
                         data.time_since_last_tick = 0.0;
                     }
                 }

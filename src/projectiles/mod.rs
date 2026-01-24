@@ -5,6 +5,7 @@ use raylib::prelude::*;
 use crate::{enemy::AllEnemies, player::Player};
 
 pub mod bolter;
+pub mod multi_melta;
 pub mod power_sword;
 pub mod shotgun;
 
@@ -15,6 +16,7 @@ const CULL_BUFFER: f32 = 200.0; // Extra margin before removing
 #[derive(Clone, Copy)]
 pub enum Projectile {
     Bolter(bolter::BolterProjectile),
+    MultiMelta(multi_melta::MultiMeltaProjectile),
     PowerSword(power_sword::PowerSwordProjectile),
     Shotgun(shotgun::ShotgunProjectile),
 }
@@ -40,6 +42,7 @@ impl<'a> AllProjectiles<'a> {
         for projectile in self.projectiles.iter_mut() {
             match projectile {
                 Projectile::Bolter(bolter_data) => bolter_data.handle_move(delta),
+                Projectile::MultiMelta(melta_data) => melta_data.handle_move(delta),
                 Projectile::PowerSword(sword_data) => sword_data.handle_move(player, delta),
                 Projectile::Shotgun(shotgun_data) => shotgun_data.handle_move(delta),
             };
@@ -54,6 +57,7 @@ impl<'a> AllProjectiles<'a> {
         self.projectiles.retain(|projectile| {
             let pos = match projectile {
                 Projectile::Bolter(b) => &b.position,
+                Projectile::MultiMelta(m) => &m.position,
                 Projectile::PowerSword(s) => &s.position,
                 Projectile::Shotgun(s) => &s.position,
             };
@@ -67,6 +71,7 @@ impl<'a> AllProjectiles<'a> {
                 Projectile::Bolter(bolter_data) => {
                     bolter_data.handle_collision(all_enemies, self.texture)
                 }
+                Projectile::MultiMelta(melta_data) => melta_data.handle_collision(all_enemies),
                 Projectile::PowerSword(sword_data) => sword_data.handle_collision(all_enemies),
                 Projectile::Shotgun(shotgun_data) => shotgun_data.handle_collision(all_enemies),
             };
@@ -74,6 +79,9 @@ impl<'a> AllProjectiles<'a> {
 
         self.projectiles.retain(|&projectile| match projectile {
             Projectile::Bolter(bolter_projectile) => bolter_projectile.hits == 0,
+            Projectile::MultiMelta(melta_projectile) => {
+                melta_projectile.distance_traveled < melta_projectile.max_range
+            }
             Projectile::PowerSword(sword_projectile) => sword_projectile.lifetime > 0.0,
             Projectile::Shotgun(shotgun_projectile) => shotgun_projectile.hits == 0,
         });

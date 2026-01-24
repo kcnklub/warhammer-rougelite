@@ -1,6 +1,7 @@
 #[derive(Clone, Copy)]
 pub enum Weapon {
     Bolter(WeaponData),
+    MultiMelta(WeaponData),
     PowerSword(WeaponData),
     Shotgun(WeaponData),
 }
@@ -9,6 +10,7 @@ impl Weapon {
     pub fn get_display_name(&self) -> &str {
         match self {
             Weapon::Bolter(_) => "Bolter",
+            Weapon::MultiMelta(_) => "Multi Melta",
             Weapon::PowerSword(_) => "Power Sword",
             Weapon::Shotgun(_) => "Shotgun",
         }
