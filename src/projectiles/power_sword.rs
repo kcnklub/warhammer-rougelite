@@ -1,4 +1,5 @@
 use crate::{
+    enemy::AllEnemies,
     player::Player,
     utils::{Direction, Position},
 };
@@ -84,5 +85,27 @@ impl PowerSwordProjectile {
         };
         self.direction = player.moving_direction;
         self.lifetime -= delta;
+    }
+
+    pub fn handle_collision(&mut self, all_enemies: &mut AllEnemies) {
+        for enemy in all_enemies.enemies.iter_mut() {
+            let texture = all_enemies
+                .texture_map
+                .get(&enemy.enemy_type)
+                .expect("unable to find texture");
+            let half_width = texture.width as f32 / 2.0;
+            let half_height = texture.height as f32 / 2.0;
+            let enemy_rec = Rectangle {
+                x: enemy.position.x - half_width,
+                y: enemy.position.y - half_height,
+                width: texture.width as f32,
+                height: texture.height as f32,
+            };
+            let sword_rect = self.get_collision_rect();
+            if enemy_rec.check_collision_recs(&sword_rect) {
+                enemy.health -= self.damage;
+                println!("Enemy Health: {}", enemy.health);
+            }
+        }
     }
 }

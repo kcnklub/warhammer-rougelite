@@ -61,54 +61,9 @@ impl<'a> AllProjectiles<'a> {
         for projectile in self.projectiles.iter_mut() {
             match projectile {
                 Projectile::Bolter(bolter_data) => {
-                    for enemy in all_enemies.enemies.iter_mut() {
-                        let texture = all_enemies
-                            .texture_map
-                            .get(&enemy.enemy_type)
-                            .expect("unable to find texture");
-                        let half_width = texture.width as f32 / 2.0;
-                        let half_height = texture.height as f32 / 2.0;
-                        let enemy_rec = Rectangle {
-                            x: enemy.position.x - half_width,
-                            y: enemy.position.y - half_height,
-                            width: texture.width as f32,
-                            height: texture.height as f32,
-                        };
-
-                        let dest_rec = Rectangle {
-                            x: bolter_data.position.x,
-                            y: bolter_data.position.y,
-                            width: self.texture.width as f32,
-                            height: self.texture.height as f32,
-                        };
-                        if enemy_rec.check_collision_recs(&dest_rec) {
-                            enemy.health -= bolter_data.damage;
-                            println!("Enemy Health: {}", enemy.health);
-                            bolter_data.hits += 1;
-                        }
-                    }
+                    bolter_data.handle_collision(all_enemies, self.texture)
                 }
-                Projectile::PowerSword(sword_data) => {
-                    for enemy in all_enemies.enemies.iter_mut() {
-                        let texture = all_enemies
-                            .texture_map
-                            .get(&enemy.enemy_type)
-                            .expect("unable to find texture");
-                        let half_width = texture.width as f32 / 2.0;
-                        let half_height = texture.height as f32 / 2.0;
-                        let enemy_rec = Rectangle {
-                            x: enemy.position.x - half_width,
-                            y: enemy.position.y - half_height,
-                            width: texture.width as f32,
-                            height: texture.height as f32,
-                        };
-                        let sword_rect = sword_data.get_collision_rect();
-                        if enemy_rec.check_collision_recs(&sword_rect) {
-                            enemy.health -= sword_data.damage;
-                            println!("Enemy Health: {}", enemy.health);
-                        }
-                    }
-                }
+                Projectile::PowerSword(sword_data) => sword_data.handle_collision(all_enemies),
             };
         }
 
