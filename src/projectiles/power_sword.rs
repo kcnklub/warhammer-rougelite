@@ -1,4 +1,7 @@
-use crate::utils::{Direction, Position};
+use crate::{
+    player::Player,
+    utils::{Direction, Position},
+};
 
 use raylib::prelude::*;
 
@@ -65,5 +68,21 @@ impl PowerSwordProjectile {
                 height: self.height,
             },
         }
+    }
+
+    pub fn handle_move(&mut self, player: &Player, delta: &f32) {
+        let rotation = match player.moving_direction {
+            Direction::Up => 1.0,
+            Direction::Down => 1.0,
+            Direction::Left => -1.0,
+            Direction::Right => 1.0,
+        };
+        let x_offset = (player.texture.width / 2) as f32;
+        self.position = Position {
+            x: player.position.x + (x_offset * rotation),
+            y: player.position.y,
+        };
+        self.direction = player.moving_direction;
+        self.lifetime -= delta;
     }
 }

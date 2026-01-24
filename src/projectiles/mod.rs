@@ -2,11 +2,7 @@ use std::vec;
 
 use raylib::prelude::*;
 
-use crate::{
-    enemy::AllEnemies,
-    player::Player,
-    utils::{Direction, Position},
-};
+use crate::{enemy::AllEnemies, player::Player};
 
 pub mod bolter;
 pub mod power_sword;
@@ -41,26 +37,8 @@ impl<'a> AllProjectiles<'a> {
     pub fn move_projectiles(&mut self, player: &Player, delta: &f32) {
         for projectile in self.projectiles.iter_mut() {
             match projectile {
-                Projectile::Bolter(bolter_data) => {
-                    let angle = bolter_data.angle;
-                    bolter_data.position.x += angle.cos() * bolter_data.speed * delta;
-                    bolter_data.position.y += angle.sin() * bolter_data.speed * delta;
-                }
-                Projectile::PowerSword(sword_data) => {
-                    let rotation = match player.moving_direction {
-                        Direction::Up => 1.0,
-                        Direction::Down => 1.0,
-                        Direction::Left => -1.0,
-                        Direction::Right => 1.0,
-                    };
-                    let x_offset = (player.texture.width / 2) as f32;
-                    sword_data.position = Position {
-                        x: player.position.x + (x_offset * rotation),
-                        y: player.position.y,
-                    };
-                    sword_data.direction = player.moving_direction;
-                    sword_data.lifetime -= delta;
-                }
+                Projectile::Bolter(bolter_data) => bolter_data.handle_move(delta),
+                Projectile::PowerSword(sword_data) => sword_data.handle_move(player, delta),
             };
         }
 

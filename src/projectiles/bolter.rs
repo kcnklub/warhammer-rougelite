@@ -19,4 +19,10 @@ impl BolterProjectile {
             angle,
         }
     }
+
+    pub fn handle_move(&mut self, delta: &f32) {
+        let angle = self.angle;
+        self.position.x += angle.cos() * self.speed * delta;
+        self.position.y += angle.sin() * self.speed * delta;
+    }
 }
