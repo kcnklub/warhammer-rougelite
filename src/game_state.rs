@@ -74,7 +74,7 @@ impl<'a> GameState<'a> {
         // TODO I need to clean up projectiles that are passed the end of the play area!!
         let mut new_projectiles = self.player.handle_weapons(&delta);
         self.projectiles.append(&mut new_projectiles);
-        self.projectiles.move_projectiles(&delta);
+        self.projectiles.move_projectiles(&self.player, &delta);
         self.projectiles.handle_collision(&mut self.enemies);
     }
 }

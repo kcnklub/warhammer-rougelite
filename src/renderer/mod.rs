@@ -71,6 +71,15 @@ pub fn render_game_state(game_state: &mut GameState, thread: &raylib::RaylibThre
 
     render_player_ui(&mut d, &game_state.player);
     render_weapon_slots(&mut d, &game_state.player);
+
+    if game_state::DEBUG_MODE {
+        render_debug_stats(
+            &mut d,
+            &game_state.player,
+            &game_state.enemies,
+            &game_state.projectiles,
+        );
+    }
 }
 
 fn render_player(d: &mut RaylibMode2D<RaylibDrawHandle>, player: &Player) {
@@ -79,16 +88,6 @@ fn render_player(d: &mut RaylibMode2D<RaylibDrawHandle>, player: &Player) {
         Direction::Down => player.texture.width as f32,
         Direction::Left => -1.0 * player.texture.width as f32,
         Direction::Right => player.texture.width as f32,
-        Direction::Angle(angle) => {
-            // Flip sprite horizontally if facing left (angle between 90 and 270 degrees)
-            // angle: 0 = right, PI/2 = down, PI = left, -PI/2 = up
-            let radians = angle;
-            if radians > std::f32::consts::FRAC_PI_2 || radians < -std::f32::consts::FRAC_PI_2 {
-                -1.0 * player.texture.width as f32
-            } else {
-                player.texture.width as f32
-            }
-        }
     };
     let source_rec = Rectangle::new(0.0, 0.0, source_width, player.texture.height as f32);
     let dest_rec = Rectangle::new(
@@ -192,6 +191,51 @@ fn render_weapon_slots(d: &mut RaylibDrawHandle, player: &Player) {
     }
 }
 
+fn render_debug_stats(
+    d: &mut RaylibDrawHandle,
+    player: &Player,
+    enemies: &AllEnemies,
+    projectiles: &AllProjectiles,
+) {
+    let screen_width = d.get_screen_width();
+    let x = screen_width - 250;
+    let mut y = 10;
+    let font_size = 16;
+    let line_height = 20;
+
+    d.draw_text("=== DEBUG ===", x, y, font_size, Color::YELLOW);
+    y += line_height;
+
+    d.draw_text(
+        &format!("Player: ({:.1}, {:.1})", player.position.x, player.position.y),
+        x, y, font_size, Color::YELLOW,
+    );
+    y += line_height;
+
+    d.draw_text(
+        &format!("Player Dir: {:?}", player.position.direction),
+        x, y, font_size, Color::YELLOW,
+    );
+    y += line_height;
+
+    d.draw_text(
+        &format!("Mouse Dir: {:.1}°", player.mouse_info.get_angle_degrees()),
+        x, y, font_size, Color::YELLOW,
+    );
+    y += line_height;
+
+    d.draw_text(
+        &format!("Enemies: {}", enemies.enemies.len()),
+        x, y, font_size, Color::YELLOW,
+    );
+    y += line_height;
+
+    d.draw_text(
+        &format!("Projectiles: {}", projectiles.projectiles.len()),
+        x, y, font_size, Color::YELLOW,
+    );
+}
+
 pub fn render_enemies(d: &mut RaylibMode2D<RaylibDrawHandle>, enemies: &AllEnemies) {
     for enemy in &enemies.enemies {
         let texture = enemies
@@ -203,7 +247,6 @@ pub fn render_enemies(d: &mut RaylibMode2D<RaylibDrawHandle>, enemies: &AllEnemi
             Direction::Down => texture.width as f32,
             Direction::Left => texture.width as f32,
             Direction::Right => -1.0 * texture.width as f32,
-            Direction::Angle(_) => texture.width as f32, // Enemies use cardinal directions, not angles
         };
 
         let source_rec = Rectangle::new(0.0, 0.0, source_width, texture.height as f32);
@@ -250,13 +293,7 @@ fn render_projectiles(d: &mut RaylibMode2D<RaylibDrawHandle>, projectiles: &AllP
                     projectiles.texture.height as f32 / 4.0,
                 );
 
-                let rotation = match bolter_data.position.direction {
-                    Direction::Up => 270.0,
-                    Direction::Down => 90.0,
-                    Direction::Left => 180.0,
-                    Direction::Right => 0.0,
-                    Direction::Angle(angle) => angle.to_degrees(),
-                };
+                let rotation = bolter_data.angle.to_degrees();
                 d.draw_texture_pro(
                     &projectiles.texture,
                     source_rec,
@@ -287,13 +324,6 @@ fn render_projectiles(d: &mut RaylibMode2D<RaylibDrawHandle>, projectiles: &AllP
                     Direction::Down => (-slash_offset, 0.0),
                     Direction::Left => (0.0, -slash_offset),
                     Direction::Right => (0.0, slash_offset),
-                    Direction::Angle(angle) => {
-                        let perp_angle = angle + std::f32::consts::FRAC_PI_2;
-                        (
-                            perp_angle.cos() * slash_offset,
-                            perp_angle.sin() * slash_offset,
-                        )
-                    }
                 };
 
                 let origin = Vector2::new(0.0, sword_data.height / 2.0);
@@ -307,7 +337,7 @@ fn render_projectiles(d: &mut RaylibMode2D<RaylibDrawHandle>, projectiles: &AllP
                 d.draw_rectangle_pro(dest_rec, origin, rotation, Color::BLUE);
 
                 if game_state::DEBUG_MODE {
-                    d.draw_rectangle_lines_ex(rect, 2.0, Color::RED);
+                    d.draw_rectangle_lines_ex(dest_rec, 2.0, Color::RED);
                 }
             }
         }

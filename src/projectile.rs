@@ -4,8 +4,13 @@ use raylib::prelude::*;
 
 use crate::{
     enemy::AllEnemies,
+    player::Player,
     utils::{Direction, Position},
 };
+
+const SCREEN_HALF_WIDTH: f32 = 1240.0;
+const SCREEN_HALF_HEIGHT: f32 = 720.0;
+const CULL_BUFFER: f32 = 200.0; // Extra margin before removing
 
 pub struct AllProjectiles<'a> {
     pub projectiles: Vec<Projectile>,
@@ -24,24 +29,34 @@ impl<'a> AllProjectiles<'a> {
         self.projectiles.append(new);
     }
 
-    pub fn move_projectiles(&mut self, delta: &f32) {
+    pub fn move_projectiles(&mut self, player: &Player, delta: &f32) {
         for projectile in self.projectiles.iter_mut() {
             match projectile {
-                Projectile::Bolter(bolter_data) => match bolter_data.position.direction {
-                    Direction::Up => bolter_data.position.y -= bolter_data.speed * delta,
-                    Direction::Down => bolter_data.position.y += bolter_data.speed * delta,
-                    Direction::Left => bolter_data.position.x -= bolter_data.speed * delta,
-                    Direction::Right => bolter_data.position.x += bolter_data.speed * delta,
-                    Direction::Angle(angle) => {
-                        bolter_data.position.x += angle.cos() * bolter_data.speed * delta;
-                        bolter_data.position.y += angle.sin() * bolter_data.speed * delta;
-                    }
-                },
+                Projectile::Bolter(bolter_data) => {
+                    let angle = bolter_data.angle;
+                    bolter_data.position.x += angle.cos() * bolter_data.speed * delta;
+                    bolter_data.position.y += angle.sin() * bolter_data.speed * delta;
+                }
                 Projectile::PowerSword(sword_data) => {
                     sword_data.lifetime -= delta;
                 }
             };
         }
+
+        // Remove projectiles that have left the visible area
+        let cull_left = player.position.x - SCREEN_HALF_WIDTH - CULL_BUFFER;
+        let cull_right = player.position.x + SCREEN_HALF_WIDTH + CULL_BUFFER;
+        let cull_top = player.position.y - SCREEN_HALF_HEIGHT - CULL_BUFFER;
+        let cull_bottom = player.position.y + SCREEN_HALF_HEIGHT + CULL_BUFFER;
+
+        self.projectiles.retain(|projectile| {
+            let pos = match projectile {
+                Projectile::Bolter(b) => &b.position,
+                Projectile::PowerSword(s) => &s.position,
+            };
+            pos.x >= cull_left && pos.x <= cull_right &&
+            pos.y >= cull_top && pos.y <= cull_bottom
+        });
     }
 
     pub fn handle_collision(&mut self, all_enemies: &mut AllEnemies) {
@@ -73,26 +88,7 @@ impl<'a> AllProjectiles<'a> {
                         }
                     }
                 }
-                Projectile::PowerSword(sword_data) => {
-                    for enemy in all_enemies.enemies.iter_mut() {
-                        let texture = all_enemies
-                            .texture_map
-                            .get(&enemy.enemy_type)
-                            .expect("unable to find texture");
-                        let enemy_rec = Rectangle {
-                            x: enemy.position.x - texture.width as f32 / 2.0,
-                            y: enemy.position.y - texture.height as f32 / 2.0,
-                            width: texture.width as f32,
-                            height: texture.height as f32,
-                        };
-
-                        let sword_rec = sword_data.get_collision_rect();
-                        if enemy_rec.check_collision_recs(&sword_rec) {
-                            enemy.health -= sword_data.damage;
-                            sword_data.hits += 1;
-                        }
-                    }
-                }
+                Projectile::PowerSword(_) => {}
             };
         }
 
@@ -115,15 +111,17 @@ pub struct BolterProjectile {
     pub damage: i32,
     pub hits: i32,
     pub position: Position,
+    pub angle: f32,
 }
 
 impl BolterProjectile {
-    pub fn new(position: Position) -> Self {
+    pub fn new(position: Position, angle: f32) -> Self {
         BolterProjectile {
             speed: 1000.0,
             damage: 10,
             hits: 0,
             position,
+            angle,
         }
     }
 }
@@ -190,17 +188,6 @@ impl PowerSwordProjectile {
                 width: self.width,
                 height: self.height,
             },
-            Direction::Angle(angle) => {
-                let perp_angle = angle + std::f32::consts::FRAC_PI_2;
-                let offset_x = angle.cos() * self.width / 2.0 + perp_angle.cos() * slash_offset;
-                let offset_y = angle.sin() * self.width / 2.0 + perp_angle.sin() * slash_offset;
-                Rectangle {
-                    x: self.position.x + offset_x - self.width / 2.0,
-                    y: self.position.y + offset_y - self.height / 2.0,
-                    width: self.width,
-                    height: self.height,
-                }
-            }
         }
     }
 }

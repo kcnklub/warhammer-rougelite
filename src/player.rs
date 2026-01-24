@@ -8,8 +8,27 @@ use crate::utils::{Direction, Position};
 use raylib::ffi::KeyboardKey;
 use raylib::prelude::*;
 
+pub struct MouseInformation(f32);
+
+impl MouseInformation {
+    pub fn get_angle_degrees(&self) -> f32 {
+        self.0.to_degrees()
+    }
+
+    pub fn get_direction(&self) -> Direction {
+        let abs_value = self.get_angle_degrees().abs();
+        if abs_value >= 90.0 {
+            Direction::Left
+        } else {
+            Direction::Right
+        }
+    }
+}
+
 pub struct Player {
     pub position: Position,
+    pub mouse_info: MouseInformation,
+
     pub move_speed: f32,
     pub health: i32,
     pub max_health: i32,
@@ -26,6 +45,7 @@ impl<'a> Player {
     pub fn new(position: Position, texture: Texture2D) -> Self {
         Player {
             position,
+            mouse_info: MouseInformation(0.0),
             move_speed: 300.0,
             health: 100,
             max_health: 100,
@@ -60,8 +80,8 @@ impl<'a> Player {
 
         // Calculate angle in radians (atan2 returns -PI to PI)
         let angle = dy.atan2(dx);
-
-        self.position.direction = Direction::Angle(angle);
+        self.mouse_info = MouseInformation(angle);
+        self.position.direction = self.mouse_info.get_direction();
     }
 
     pub fn handle_user_input(&mut self, rl: &raylib::RaylibHandle, delta: &f32) {
@@ -144,34 +164,16 @@ impl<'a> Player {
                     let offset = (self.texture.width / 2) as f32;
 
                     if data.time_since_last_tick >= data.tick_interval {
-                        let position = match self.position.direction {
-                            Direction::Up => Position {
-                                x: self.position.x,
-                                y: self.position.y - offset,
-                                direction: self.position.direction,
-                            },
-                            Direction::Down => Position {
-                                x: self.position.x,
-                                y: self.position.y + offset,
-                                direction: self.position.direction,
-                            },
-                            Direction::Right => Position {
-                                x: self.position.x + offset,
-                                y: self.position.y,
-                                direction: self.position.direction,
-                            },
-                            Direction::Left => Position {
-                                x: self.position.x - offset,
-                                y: self.position.y,
-                                direction: self.position.direction,
-                            },
-                            Direction::Angle(angle) => Position {
-                                x: self.position.x + angle.cos() * offset,
-                                y: self.position.y + angle.sin() * offset,
-                                direction: Direction::Angle(angle),
-                            },
+                        let angle = self.mouse_info.0;
+                        let position = Position {
+                            x: self.position.x + angle.cos() * offset,
+                            y: self.position.y + angle.sin() * offset,
+                            direction: self.position.direction,
                         };
-                        res.push(Projectile::Bolter(BolterProjectile::new(position)));
+                        res.push(Projectile::Bolter(BolterProjectile::new(
+                            position,
+                            self.mouse_info.0,
+                        )));
                         data.time_since_last_tick = 0.0;
                     }
                 }
@@ -179,22 +181,20 @@ impl<'a> Player {
                     data.time_since_last_tick += delta;
                     let offset = (self.texture.width / 2) as f32;
 
+                    let rotation = match self.position.direction {
+                        Direction::Up => 1.0,
+                        Direction::Down => 1.0,
+                        Direction::Left => -1.0,
+                        Direction::Right => 1.0,
+                    };
                     if data.time_since_last_tick >= data.tick_interval {
-                        if let Direction::Angle(angle) = self.position.direction {
-                            let x;
-                            if angle > 0.0 && angle <= 180.0 {
-                                x = self.position.x - offset;
-                            } else {
-                                x = self.position.x + offset;
-                            }
-                            let position = Position {
-                                x,
-                                y: self.position.y,
-                                direction: self.position.direction,
-                            };
-                            res.push(Projectile::PowerSword(PowerSwordProjectile::new(position)));
-                            data.time_since_last_tick = 0.0;
-                        }
+                        let position = Position {
+                            x: self.position.x + (offset * rotation),
+                            y: self.position.y,
+                            direction: self.position.direction,
+                        };
+                        res.push(Projectile::PowerSword(PowerSwordProjectile::new(position)));
+                        data.time_since_last_tick = 0.0;
                     }
                 }
             }
