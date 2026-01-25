@@ -10,7 +10,7 @@ const PICKUP_RADIUS: f32 = 24.0;
 const SPAWN_RADIUS: f32 = 2500.0;
 const TARGET_PICKUP_COUNT: usize = 6;
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub struct WeaponPickup {
     pub weapon: Weapon,
     pub position: Position,
@@ -56,9 +56,9 @@ impl AllWeaponPickups {
                 break;
             }
 
-            let pickup = self.pickups[index];
+            let pickup = self.pickups[index].clone();
             if is_pickup_in_range(player, &pickup) {
-                if player.try_add_weapon(pickup.weapon) {
+                if player.add_or_stack_weapon(pickup.weapon) {
                     self.pickups.swap_remove(index);
                     continue;
                 }
@@ -102,21 +102,29 @@ fn random_weapon(rng: &mut impl Rng) -> Weapon {
             damage: 10.0,
             tick_interval: 1.0,
             time_since_last_tick: 0.0,
+            stack_count: 1,
+            queued_shots: vec![],
         }),
         1 => Weapon::PowerSword(WeaponData {
             damage: 24.0,
             tick_interval: 0.6,
             time_since_last_tick: 0.0,
+            stack_count: 1,
+            queued_shots: vec![],
         }),
         2 => Weapon::Shotgun(WeaponData {
             damage: 8.0,
             tick_interval: 1.2,
             time_since_last_tick: 0.0,
+            stack_count: 1,
+            queued_shots: vec![],
         }),
         _ => Weapon::MultiMelta(WeaponData {
             damage: 18.0,
             tick_interval: 1.8,
             time_since_last_tick: 0.0,
+            stack_count: 1,
+            queued_shots: vec![],
         }),
     }
 }

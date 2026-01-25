@@ -14,6 +14,7 @@ use std::f32::consts::PI;
 
 // Scale factor for player sprite rendering (higher value = smaller sprite)
 pub const PLAYER_SCALE: f32 = 1.5;
+const STACKED_SHOT_DELAY: f32 = 0.06;
 
 pub struct MouseInformation(f32);
 
@@ -73,6 +74,8 @@ impl<'a> Player {
                     damage: 10.0,
                     tick_interval: 1.0,
                     time_since_last_tick: 0.0,
+                    stack_count: 1,
+                    queued_shots: vec![],
                 })),
                 None,
                 None,
@@ -174,6 +177,7 @@ impl<'a> Player {
 
     pub fn handle_weapons(&mut self, delta: &f32) -> Vec<Projectile> {
         let mut res = vec![];
+        let delta = *delta;
         for slot in self.weapons.iter_mut() {
             let Some(weapon) = slot else { continue };
             match weapon {
@@ -181,17 +185,20 @@ impl<'a> Player {
                     data.time_since_last_tick += delta;
 
                     let offset = (self.texture.width / 2) as f32;
-
-                    if data.time_since_last_tick >= data.tick_interval {
+                    let mut fire_bolter = || {
                         let angle = self.mouse_info.0;
                         let position = Position {
                             x: self.position.x + angle.cos() * offset,
                             y: self.position.y + angle.sin() * offset,
                         };
-                        res.push(Projectile::Bolter(BolterProjectile::new(
-                            position,
-                            self.mouse_info.0,
-                        )));
+                        res.push(Projectile::Bolter(BolterProjectile::new(position, angle)));
+                    };
+
+                    process_queued_shots(data, delta, &mut fire_bolter);
+
+                    if data.time_since_last_tick >= data.tick_interval {
+                        fire_bolter();
+                        enqueue_stacked_shots(data);
                         data.time_since_last_tick = 0.0;
                     }
                 }
@@ -199,13 +206,13 @@ impl<'a> Player {
                     data.time_since_last_tick += delta;
                     let offset = (self.texture.width / 2) as f32;
 
-                    let rotation = match self.moving_direction {
-                        Direction::Up => 1.0,
-                        Direction::Down => 1.0,
-                        Direction::Left => -1.0,
-                        Direction::Right => 1.0,
-                    };
-                    if data.time_since_last_tick >= data.tick_interval {
+                    let mut fire_sword = || {
+                        let rotation = match self.moving_direction {
+                            Direction::Up => 1.0,
+                            Direction::Down => 1.0,
+                            Direction::Left => -1.0,
+                            Direction::Right => 1.0,
+                        };
                         let position = Position {
                             x: self.position.x + (offset * rotation),
                             y: self.position.y,
@@ -214,14 +221,20 @@ impl<'a> Player {
                             position,
                             self.moving_direction,
                         )));
+                    };
+
+                    process_queued_shots(data, delta, &mut fire_sword);
+
+                    if data.time_since_last_tick >= data.tick_interval {
+                        fire_sword();
+                        enqueue_stacked_shots(data);
                         data.time_since_last_tick = 0.0;
                     }
                 }
                 Weapon::Shotgun(data) => {
                     data.time_since_last_tick += delta;
                     let offset = (self.texture.width / 2) as f32;
-
-                    if data.time_since_last_tick >= data.tick_interval {
+                    let mut fire_shotgun = || {
                         let base_angle = match self.moving_direction {
                             Direction::Up => -PI / 2.0,
                             Direction::Down => PI / 2.0,
@@ -244,15 +257,20 @@ impl<'a> Player {
                             };
                             res.push(Projectile::Shotgun(ShotgunProjectile::new(position, angle)));
                         }
+                    };
 
+                    process_queued_shots(data, delta, &mut fire_shotgun);
+
+                    if data.time_since_last_tick >= data.tick_interval {
+                        fire_shotgun();
+                        enqueue_stacked_shots(data);
                         data.time_since_last_tick = 0.0;
                     }
                 }
                 Weapon::MultiMelta(data) => {
                     data.time_since_last_tick += delta;
                     let offset = (self.texture.width / 2) as f32;
-
-                    if data.time_since_last_tick >= data.tick_interval {
+                    let mut fire_melta = || {
                         let angle = self.mouse_info.0;
                         let position = Position {
                             x: self.position.x + angle.cos() * offset,
@@ -261,6 +279,13 @@ impl<'a> Player {
                         res.push(Projectile::MultiMelta(MultiMeltaProjectile::new(
                             position, angle,
                         )));
+                    };
+
+                    process_queued_shots(data, delta, &mut fire_melta);
+
+                    if data.time_since_last_tick >= data.tick_interval {
+                        fire_melta();
+                        enqueue_stacked_shots(data);
                         data.time_since_last_tick = 0.0;
                     }
                 }
@@ -308,11 +333,11 @@ impl<'a> Player {
             .collect()
     }
 
-    pub fn get_weapon_slots(&self) -> [Option<&str>; 3] {
+    pub fn get_weapon_slots(&self) -> [Option<String>; 3] {
         [
-            self.weapons[0].as_ref().map(|w| w.get_display_name()),
-            self.weapons[1].as_ref().map(|w| w.get_display_name()),
-            self.weapons[2].as_ref().map(|w| w.get_display_name()),
+            self.weapons[0].as_ref().map(Self::format_weapon_slot),
+            self.weapons[1].as_ref().map(Self::format_weapon_slot),
+            self.weapons[2].as_ref().map(Self::format_weapon_slot),
         ]
     }
 
@@ -322,6 +347,13 @@ impl<'a> Player {
 
     pub fn has_full_weapon_slots(&self) -> bool {
         self.weapon_count() >= self.weapons.len()
+    }
+
+    pub fn add_or_stack_weapon(&mut self, weapon: Weapon) -> bool {
+        if self.stack_weapon(&weapon) {
+            return true;
+        }
+        self.try_add_weapon(weapon)
     }
 
     pub fn try_add_weapon(&mut self, weapon: Weapon) -> bool {
@@ -334,7 +366,57 @@ impl<'a> Player {
         false
     }
 
+    fn stack_weapon(&mut self, weapon: &Weapon) -> bool {
+        for slot in self.weapons.iter_mut() {
+            if let Some(existing) = slot {
+                if existing.is_same_type(weapon) {
+                    existing.increment_stack();
+                    return true;
+                }
+            }
+        }
+        false
+    }
+
+    fn format_weapon_slot(weapon: &Weapon) -> String {
+        let name = weapon.get_display_name();
+        let count = weapon.get_stack_count();
+        if count > 1 {
+            format!("{} x{}", name, count)
+        } else {
+            name.to_string()
+        }
+    }
+
     pub fn is_alive(&self) -> bool {
         self.health > 0
+    }
+}
+
+fn enqueue_stacked_shots(data: &mut WeaponData) {
+    if data.stack_count <= 1 {
+        return;
+    }
+    for i in 1..data.stack_count {
+        data.queued_shots.push((i as f32) * STACKED_SHOT_DELAY);
+    }
+}
+
+fn process_queued_shots<F>(data: &mut WeaponData, delta: f32, fire_shot: &mut F)
+where
+    F: FnMut(),
+{
+    for delay in data.queued_shots.iter_mut() {
+        *delay -= delta;
+    }
+
+    let mut index = 0;
+    while index < data.queued_shots.len() {
+        if data.queued_shots[index] <= 0.0 {
+            fire_shot();
+            data.queued_shots.swap_remove(index);
+        } else {
+            index += 1;
+        }
     }
 }

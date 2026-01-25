@@ -197,7 +197,7 @@ fn render_weapon_slots(d: &mut RaylibDrawHandle, player: &Player) {
         d.draw_rectangle_lines(x, y, slot_size, slot_size, Color::WHITE);
 
         // Draw weapon name or "Empty"
-        let text = slot.unwrap_or("Empty");
+        let text = slot.as_deref().unwrap_or("Empty");
         let font_size = 12;
         let text_x = x + 5;
         let text_y = y + (slot_size - font_size) / 2;
