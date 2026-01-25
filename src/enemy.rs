@@ -11,9 +11,12 @@ use crate::{
 const SPEED: f32 = 2000.0;
 
 // Spawn rate scaling constants
-const BASE_SPAWN_RATE: f32 = 3.0; // Starting spawn interval (seconds)
+const BASE_SPAWN_RATE: f32 = 2.0; // Starting spawn interval (seconds)
 const MIN_SPAWN_RATE: f32 = 0.3; // Minimum spawn interval (floor)
 const SPAWN_SCALING_FACTOR: f32 = 60.0; // How quickly difficulty ramps up
+const BASE_SPAWN_COUNT: f32 = 2.0; // Enemies per spawn tick at start
+const MAX_SPAWN_COUNT: f32 = 6.0; // Cap to avoid extreme spikes
+const SPAWN_COUNT_SCALING_FACTOR: f32 = 45.0; // How quickly spawn count ramps up
 
 // Viewport and spawn positioning
 const SCREEN_HALF_WIDTH: f32 = 1240.0; // 2480 / 2
@@ -107,6 +110,14 @@ impl<'a> AllEnemies<'a> {
         dynamic_rate.max(MIN_SPAWN_RATE)
     }
 
+    fn calculate_spawn_count(&self, elapsed_time: f32) -> usize {
+        let scaled_count = BASE_SPAWN_COUNT + (elapsed_time / SPAWN_COUNT_SCALING_FACTOR);
+        scaled_count
+            .clamp(BASE_SPAWN_COUNT, MAX_SPAWN_COUNT)
+            .floor()
+            .max(1.0) as usize
+    }
+
     pub fn spawn_enemies(&mut self, delta: &f32, player_pos: &Position, elapsed_time: f32) {
         self.time_since_spawn += delta;
 
@@ -114,11 +125,15 @@ impl<'a> AllEnemies<'a> {
 
         if self.time_since_spawn >= current_spawn_interval {
             let mut rng = rand::rng();
-            let spawn_position = calculate_spawn_position(player_pos, &mut rng);
+            let spawn_count = self.calculate_spawn_count(elapsed_time);
 
-            let spawned_enemy = EnemyType::new_servo_skull(spawn_position);
-            self.enemies.push(spawned_enemy);
-            self.time_since_spawn = 0.0;
+            for _ in 0..spawn_count {
+                let spawn_position = calculate_spawn_position(player_pos, &mut rng);
+                let spawned_enemy = EnemyType::new_servo_skull(spawn_position);
+                self.enemies.push(spawned_enemy);
+            }
+
+            self.time_since_spawn -= current_spawn_interval;
         }
     }
 }
