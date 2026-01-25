@@ -69,16 +69,12 @@ impl<'a> Player {
             max_health: 100,
             statuses: vec![],
             weapons: [
-                Some(Weapon::Shotgun(WeaponData {
-                    damage: 1.0,
-                    tick_interval: 0.9,
+                Some(Weapon::Bolter(WeaponData {
+                    damage: 10.0,
+                    tick_interval: 1.0,
                     time_since_last_tick: 0.0,
                 })),
-                Some(Weapon::MultiMelta(WeaponData {
-                    damage: 1.0,
-                    tick_interval: 1.1,
-                    time_since_last_tick: 0.0,
-                })),
+                None,
                 None,
             ],
             texture,
@@ -318,6 +314,24 @@ impl<'a> Player {
             self.weapons[1].as_ref().map(|w| w.get_display_name()),
             self.weapons[2].as_ref().map(|w| w.get_display_name()),
         ]
+    }
+
+    pub fn weapon_count(&self) -> usize {
+        self.weapons.iter().filter(|slot| slot.is_some()).count()
+    }
+
+    pub fn has_full_weapon_slots(&self) -> bool {
+        self.weapon_count() >= self.weapons.len()
+    }
+
+    pub fn try_add_weapon(&mut self, weapon: Weapon) -> bool {
+        for slot in self.weapons.iter_mut() {
+            if slot.is_none() {
+                *slot = Some(weapon);
+                return true;
+            }
+        }
+        false
     }
 
     pub fn is_alive(&self) -> bool {

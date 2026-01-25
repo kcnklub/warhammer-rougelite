@@ -4,6 +4,7 @@ use crate::{
     player::{Player, PLAYER_SCALE},
     projectiles::AllProjectiles,
     utils::Direction,
+    weapon_pickups::AllWeaponPickups,
 };
 use raylib::{color::Color, prelude::*};
 
@@ -46,6 +47,7 @@ pub fn render_game_state(game_state: &mut GameState, thread: &raylib::RaylibThre
         game_state.background.render(&mut d2, camera_target);
 
         // Game entities (normal layer)
+        render_weapon_pickups(&mut d2, &game_state.weapon_pickups);
         render_player(&mut d2, &game_state.player);
         render_projectiles(
             &mut d2,
@@ -165,6 +167,16 @@ fn render_player_ui(d: &mut RaylibDrawHandle, player: &Player) {
             status_color,
         );
         y_offset += 20;
+    }
+}
+
+fn render_weapon_pickups(d: &mut RaylibMode2D<RaylibDrawHandle>, pickups: &AllWeaponPickups) {
+    let font_size = 16;
+    for pickup in &pickups.pickups {
+        let text = pickup.weapon.get_display_name();
+        let x = pickup.position.x as i32;
+        let y = pickup.position.y as i32;
+        d.draw_text(text, x, y, font_size, Color::WHITE);
     }
 }
 

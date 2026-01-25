@@ -5,4 +5,5 @@ pub mod projectiles;
 pub mod renderer;
 pub mod statuses;
 pub mod utils;
+pub mod weapon_pickups;
 pub mod weapons;

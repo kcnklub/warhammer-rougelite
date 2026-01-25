@@ -2,7 +2,7 @@ use raylib::prelude::{RaylibShader, *};
 
 use crate::{
     enemy::AllEnemies, player::Player, projectiles::AllProjectiles,
-    renderer::background::Background,
+    renderer::background::Background, weapon_pickups::AllWeaponPickups,
 };
 
 pub const DEBUG_MODE: bool = true;
@@ -13,6 +13,7 @@ pub struct GameState<'a> {
     pub projectiles: AllProjectiles<'a>,
     pub enemies: AllEnemies<'a>,
     pub background: Background<'a>,
+    pub weapon_pickups: AllWeaponPickups,
     pub white_texture: Texture2D,
     pub multi_melta_shader: MultiMeltaShader,
     pub elapsed_time: f32,
@@ -57,12 +58,15 @@ impl<'a> GameState<'a> {
         let color_mid_loc = multi_melta_shader.get_shader_location("color_mid");
         let color_cool_loc = multi_melta_shader.get_shader_location("color_cool");
 
+        let weapon_pickups = AllWeaponPickups::new(player.position);
+
         GameState {
             rl,
             player,
             projectiles: AllProjectiles::new(bullet_texture),
             enemies: AllEnemies::new(enemy_texture),
             background: Background::new(ground_texture1, ground_texture2),
+            weapon_pickups,
             white_texture,
             multi_melta_shader: MultiMeltaShader {
                 shader: multi_melta_shader,
@@ -108,6 +112,7 @@ impl<'a> GameState<'a> {
 
         self.player.handle_user_input(self.rl, &delta);
         self.player.handle_status_effects(&delta);
+        self.weapon_pickups.update(&mut self.player);
 
         // Move enemy tick BEFORE handle_enemies so knockback velocity is applied next frame
         self.enemies.tick(&mut self.player, &delta);
