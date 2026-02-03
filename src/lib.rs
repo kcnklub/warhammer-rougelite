@@ -1,9 +1,11 @@
 pub mod enemy;
 pub mod game_state;
+mod main_menu;
 pub mod player;
 pub mod projectiles;
 pub mod renderer;
 pub mod statuses;
 pub mod utils;
+pub mod warhammer_game;
 pub mod weapon_pickups;
 pub mod weapons;
